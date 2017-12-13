@@ -1,0 +1,25 @@
+{
+  "name": "user-service",
+  "version": "0.0.1",
+  "description": "This is the API of User Service. Users can be created, deleted, edited, and retrieved. Users can also log-in, which will create a session cookie and issue a token. Logging out will delete the code.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KL-Kim/user-service.git"
+  },
+  "keywords": [
+    "microserivce",
+    "node.js",
+    "rest",
+    "api"
+  ],
+  "author": "Tony Kim",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/KL-Kim/user-service/issues"
+  },
+  "homepage": "https://github.com/KL-Kim/user-service#readme"
+}
