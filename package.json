@@ -4,7 +4,9 @@
   "description": "This is the API of User Service. Users can be created, deleted, edited, and retrieved. Users can also log-in, which will create a session cookie and issue a token. Logging out will delete the code.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "babel-node index.js",
+    "debug": "babel-node --inspect index.js "
   },
   "repository": {
     "type": "git",
@@ -21,5 +23,33 @@
   "bugs": {
     "url": "https://github.com/KL-Kim/user-service/issues"
   },
-  "homepage": "https://github.com/KL-Kim/user-service#readme"
+  "homepage": "https://github.com/KL-Kim/user-service#readme",
+  "dependencies": {
+    "auto-bind": "^1.1.0",
+    "bcrypt": "^1.0.3",
+    "compression": "^1.7.1",
+    "csurf": "^1.9.0",
+    "dotenv": "^4.0.0",
+    "express": "^4.16.2",
+    "express-session": "^1.15.6",
+    "express-validation": "^1.0.2",
+    "helmet": "^3.9.0",
+    "http-status": "^1.0.1",
+    "joi": "^13.0.2",
+    "jsonwebtoken": "^8.1.0",
+    "method-override": "^2.3.10",
+    "mongoose": "^4.13.7",
+    "morgan": "^1.9.0",
+    "passport": "^0.4.0",
+    "passport-jwt": "^3.0.1",
+    "passport-local": "^1.0.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-stage-2": "^6.24.1",
+    "babel-register": "^6.26.0"
+  }
 }
