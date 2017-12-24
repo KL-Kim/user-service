@@ -83,9 +83,11 @@ UserSchema.pre('save', function(next) {
 UserSchema.methods = {
 	// Verify password validity
 	isValidPassword(password, next) {
-		bcrypt.compare(password, this.password).then(function(err, isMatch) {
-			if (err) return next(new APIError("Verify password failed", httpStatus.INTERNAL_SERVER_ERROR));
+		bcrypt.compare(password, this.password).then(function(isMatch) {
 			next(null, isMatch);
+		}).catch((err) => {
+			if (err) 
+				return next(new APIError("Verify password failed", httpStatus.INTERNAL_SERVER_ERROR));			
 		});
 	},
 

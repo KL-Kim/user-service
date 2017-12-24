@@ -16,6 +16,9 @@ class UserController extends BaseController {
 	}
 
 	createNewUser(req, email, password, done) {
+		if (req.body.password !== req.body.passwordConfirmation) 
+			return done(new APIError("Passwords do not match", httpStatus.BAD_REQUEST));
+
 		User.findOne({ email: email }, function(err, user) {
 			if (err)
 				return done(err);
@@ -31,7 +34,7 @@ class UserController extends BaseController {
 					firstName: data.firstName,
 					lastName: data.lastName
 				});
-				user.save().then(function() {
+				user.save().then(function(user) {
 					let jwtManager = new JwtManager({id: user.id});
 					jwtManager.signToken().then((token) => {
 						return done(null, {

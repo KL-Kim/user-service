@@ -28,15 +28,19 @@ passport.deserializeUser(function(id, done) {
   });
 });
 
-passport.use('local-signup', new LocalStrategy(credentialOptions, userController.createNewUser));
-// passport.use('local-login', new LocalStrategy(credentialOptions, authController.login);
+// Sign up passport-local strategy
+passport.use('local-signup', new LocalStrategy({
+	usernameField: 'email',
+	passwordField: 'password',
+	session: false,
+	passReqToCallback: true
+}, userController.createNewUser));
 
-// const jwtOptions = {
-// 	jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-// 	secretOrKey: config.jwtOptions.secretOrKey,
-// 	// issuer: config.jwtOptions.issue,
-// 	// audience: config.jwtOptions.audience,
-// 	algorithm: config.jwtOptions.algorithm
-// };
+// Login passport-local strategy
+passport.use('local-login', new LocalStrategy({
+	usernameField: 'email',
+	passwordField: 'password',
+	session: false,
+}, authController.login));
 
 export default passport;

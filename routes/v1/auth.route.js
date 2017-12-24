@@ -9,7 +9,7 @@ const router = Express.Router();
 const authController = new AuthController();
 
 router.post('/login', validate(paramValidation.login), function(req, res, next) {
-	passport.authenticate('local-signup', function(err, token) {
+	passport.authenticate('local-login', function(err, token) {
 		if (err) next(err);
 		if (token)
 			res.json(token);
