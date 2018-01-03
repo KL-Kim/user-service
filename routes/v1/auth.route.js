@@ -1,20 +1,16 @@
 import Express from 'express';
-import passport from 'passport';
 import validate from 'express-validation';
 
 import AuthController from '../../controller/auth.controller';
-import paramValidation from '../../config/paramValidation';
+import paramValidation from '../../config/param-validation';
 
 const router = Express.Router();
 const authController = new AuthController();
 
-router.post('/login', validate(paramValidation.login), function(req, res, next) {
-	passport.authenticate('local-login', function(err, token) {
-		if (err) next(err);
-		if (token)
-			res.json(token);
-		next();
-	})(req, res, next);
-});
+/** Post /api/v1/auth/login - User login **/
+router.post('/login', validate(paramValidation.login), authController.login);
+
+/** GET /api/v1/auth/logout - User logout **/
+router.get('/logout', authController.logout);
 
 export default router;

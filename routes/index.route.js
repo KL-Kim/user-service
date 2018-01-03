@@ -8,6 +8,6 @@ router.use('/v1', routes);
 // Check route goes well
 router.get('/say', (req, res) => {
 	res.json('what');
-})
+});
 
 export default router;

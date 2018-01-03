@@ -5,7 +5,12 @@ import bcrypt from 'bcrypt';
 
 import APIError from '../helper/APIError';
 
+// Salt rounds for bcrypt
 const saltRounds = 12;
+
+/**
+ * User mongoose schema
+ */
 const UserSchema = new mongoose.Schema({
 	username: {
 		type: String,
@@ -14,15 +19,27 @@ const UserSchema = new mongoose.Schema({
 			unique: true
 		}
 	},
+	role: {
+		type: String,
+		required: true,
+		default: 'regular',
+		enum: ['god', 'admin', 'manager', 'regular']
+	},
 	email: {
 		type: String,
 		unique: true,
 		required: true,
-		match: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i
+		match: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
+		index: {
+			unique: true
+		}
+	},
+	mobileNumber: {
+		type: String,
 	},
 	password: {
 		type: String,
-		minLength: [6, 'The value of path `{PATH}` (`{VALUE}`) is shorter than the minimum allowed length ({MINLENGTH}).'],
+		minLength: [8, 'The value of path `{PATH}` (`{VALUE}`) is shorter than the minimum allowed length ({MINLENGTH}).'],
 		required: true
 	},
 	firstName: {
@@ -31,15 +48,18 @@ const UserSchema = new mongoose.Schema({
 	lastName: {
 		type: String
 	},
-	mobileNumber: {
+	sex: {
 		type: String,
-		unique: true
+		enum: ['male', 'female']
 	},
-	dateCreated: {
+	address: {
+		type: String
+	},
+	createdAt: {
 		type: Date,
 		default: Date.now
 	},
-	lastLoginDate: {
+	lastLoginAt: {
 		type: Date,
 		default: Date.now
 	},
@@ -47,14 +67,15 @@ const UserSchema = new mongoose.Schema({
 		type: String,
 		default: ''
 	},
-	// userStatus: {
-	// 	type: Boolean,
-	// 	default: true
-	// }
+	userStatus: {
+		type: String,
+		enum: ['normal', 'suspened'],
+		default: 'nomral'
+	}
 });
 
 /**
- * virtuals
+ * Virtuals
  */
 UserSchema.virtual('id')
 	.get(function() { return this._id });
@@ -69,11 +90,11 @@ UserSchema.pre('save', function(next) {
 		return next();
 	}
 
-	bcrypt.hash(user.password, saltRounds, function(err, hash) {
-		if (err) 
-				next(new APIError("Hashing password failed", httpStatus.INTERNAL_SERVER_ERROR));
+	bcrypt.hash(user.password, saltRounds).then((hash) => {
 		user.password = hash;
 		next();
+	}).catch((err) => {
+		next(new APIError("Hashing password failed", httpStatus.INTERNAL_SERVER_ERROR));
 	});
 });
 
@@ -81,13 +102,18 @@ UserSchema.pre('save', function(next) {
  * Methods
  */
 UserSchema.methods = {
-	// Verify password validity
-	isValidPassword(password, next) {
-		bcrypt.compare(password, this.password).then(function(isMatch) {
-			next(null, isMatch);
-		}).catch((err) => {
-			if (err) 
-				return next(new APIError("Verify password failed", httpStatus.INTERNAL_SERVER_ERROR));			
+	/** 
+	 * Verify password validity
+	 * @param {string} password
+	 * @returns {Promise<boolean, Error>}
+	*/
+	isValidPassword(password) {
+		return new Promise((resolve, reject) => {
+			bcrypt.compare(password, this.password).then((res) => {
+				resolve(res);
+			}).catch((err) => {
+				reject(err);
+			});
 		});
 	},
 
@@ -98,10 +124,11 @@ UserSchema.methods = {
 		return obj;
 	}
 };
+
 /**
  * Statics
  */
-UserSchema.static = {
+UserSchema.statics = {
 	// Get user by Id
 	getById(id) {
 		return this.findById(id)
@@ -116,13 +143,19 @@ UserSchema.static = {
 			});
 	},
 
+	/**
+	 * List users in descending order of 'createdAt' timestamp.
+	 * @param {number} skip - Number of users to be skipped.
+	 * @param {number} limit - Limit number of users to be returned.
+	 * @returns {Promise<User[]>}
+	 */
 	getUsersList({skip = 0, limit = 50} = {}) {
 		return this.find()
-			.sort({ dateCreated: -1 })
+			.sort({ createdAt: -1 })
 			.skip(+skip)
 			.limit(+limit)
 			.exec();
 	}
 };
 
-module.exports = mongoose.model('User', UserSchema);
+export default mongoose.model('User', UserSchema);
