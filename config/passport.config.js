@@ -11,7 +11,7 @@ const JwtStrategy = require('passport-jwt').Strategy;
 const ExtractJwt = require('passport-jwt').ExtractJwt;
 
 import config from './config';
-import APIError from '../helper/APIError';
+import APIError from '../helper/api-error';
 import User from '../models/user.model';
 import RevokedToken from '../models/revoked-token.model';
 
@@ -71,9 +71,7 @@ jwtOptions.jsonWebTokenOptions = {
 };
 
 passport.use('jwt-rs', new JwtStrategy(jwtOptions, function(jwt_payload, done) {
-	User.findById(jwt_payload.uid).exec((err, user) => {
-		if (err) return done(err, false, false);
-
+	User.findById(jwt_payload.uid).exec().then((user) => {
 		if (user) {
 			return done(null, {
 				payload: jwt_payload,
@@ -82,6 +80,8 @@ passport.use('jwt-rs', new JwtStrategy(jwtOptions, function(jwt_payload, done) {
 		} else {
 			return done(new APIError("User do not exists", httpStatus.NOT_FOUND));
 		}
+	}).catch(err => {
+		done(err, false, false)
 	});
 }));
 

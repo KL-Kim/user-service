@@ -10,7 +10,7 @@ import jwt from 'jsonwebtoken';
 import uuid from 'uuid';
 
 import config from './config.js';
-import APIError from '../helper/APIError';
+import APIError from '../helper/api-error';
 import RevokedToken from '../models/revoked-token.model';
 
 class jwtManager {

@@ -11,6 +11,7 @@ import methodOverride from 'method-override';
 
 // For debugging and monitoring
 import logger from 'morgan';
+import errorHandler from './helper/error-handler.js'
 
 import config from './config/config';
 import passport from './config/passport.config';
@@ -87,6 +88,11 @@ require('./config/db.config');
 // App routes
 app.use('/api', routes);
 
+app.use(errorHandler);
+
 app.listen(config.port, () => {
 	console.log("Server is listening on port: " + config.port);
 });
+
+// Export for App testing
+export default app;

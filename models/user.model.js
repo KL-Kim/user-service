@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import httpStatus from 'http-status';
 import bcrypt from 'bcrypt';
 
-import APIError from '../helper/APIError';
+import APIError from '../helper/api-error';
 
 // Salt rounds for bcrypt
 const saltRounds = 12;

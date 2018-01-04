@@ -1,7 +1,7 @@
 import passport from 'passport';
 
 import BaseController from './base.controller';
-import APIError from '../helper/APIError';
+import APIError from '../helper/api-error';
 import JwtManager from '../config/jwt.config';
 const User = require('../models/user.model');
 

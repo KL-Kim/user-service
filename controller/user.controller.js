@@ -3,7 +3,7 @@ import passport from 'passport';
 import httpStatus from 'http-status';
 
 import BaseController from './base.controller';
-import APIError from '../helper/APIError';
+import APIError from '../helper/api-error';
 import JwtManager from '../config/jwt.config';
 import ac from '../config/rbac.config';
 import User from '../models/user.model';
@@ -105,7 +105,9 @@ class UserController extends BaseController {
 	static authenticate(req, res, next) {
 		return new Promise((resolve, reject) => {
 			passport.authenticate('jwt-rs', function(err, result, info) {
-				if (err || info) return reject(err || info);
+				if (err) return reject(err);
+				if (info) return reject(new APIError(info.message, httpStatus.UNAUTHORIZED));
+
 
 				if (result.user) {
 					return resolve(result);

@@ -2,6 +2,7 @@ import httpStatus from 'http-status';
 
 /**
  * @extends Error
+ * @version 0.0.1
  */
 class ExtendableError extends Error {
   constructor(message, status, isPublic) {
