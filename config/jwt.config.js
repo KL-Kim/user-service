@@ -12,9 +12,11 @@ import uuid from 'uuid';
 import config from './config.js';
 import APIError from '../helper/api-error';
 import RevokedToken from '../models/revoked-token.model';
+import BaseAutoBindedClass from '../helper/base-autobind.js';
 
-class jwtManager {
+class jwtManager extends BaseAutoBindedClass {
 	constructor() {
+		super();
 		this._privateKey = this._providePrivateKey();
 		this._publicKey = this._providePublicKey();
 		this._options = this._provideOptions();
@@ -97,8 +99,13 @@ class jwtManager {
 	 * @param {function} callback - callback function
 	 * @returns {*}
 	 */
-	static _verify(token, callback) {
-		return jwt.verify(token, this._publicKey, this._options, callback);
+	_verify(token) {
+		return new Promise((resolve, reject) => {
+			jwt.verify(token, this._publicKey, this._options, (err, decoded) => {
+				if (err) return reject(err);
+				else return resolve(decoded);
+			});
+		});
 	}
 
 }

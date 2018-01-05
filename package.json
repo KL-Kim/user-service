@@ -6,7 +6,8 @@
   "scripts": {
     "test": "cross-env NODE_ENV=test mocha --require babel-core/register tests/**/*.test.js",
     "start": "babel-node index.js",
-    "debug": "babel-node --inspect=0.0.0.0:9229 index.js "
+    "debug": "babel-node --inspect=0.0.0.0:9229 index.js ",
+    "init-db": "babel-node tests/init.mongo.js"
   },
   "repository": {
     "type": "git",

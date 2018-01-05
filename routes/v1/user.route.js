@@ -17,6 +17,6 @@ router.get('/', validate(paramValidation.getUsersList), userController.getUsersL
 router.get('/:id', validate(paramValidation.getUserById), userController.getUserById);
 
 /** Put /api/v1/user/:id - Edit user info **/
-// router.put('/:id', validate(paramValidation.createUser), userController.editUser);
+router.put('/:id', validate(paramValidation.updateUser), userController.updateUser);
 
 export default router;

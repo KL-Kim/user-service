@@ -14,8 +14,6 @@ export default {
 			password: Joi.string().min(6).strip().required(),
 			passwordConfirmation: Joi.any().valid(Joi.ref('password')).options({ language: { any: { allowOnly: 'Passwords do not match' } } }).required(),
 			email: Joi.string().email().required(),
-			firstName: Joi.string().alphanum().trim(),
-			lastName: Joi.string().alphanum().trim(),
 		}
 	},
 
@@ -39,5 +37,15 @@ export default {
 			limit: Joi.number(),
 			skip: Joi.number()
 		}
-	}
+	},
+
+	updateUser: {
+		body: {
+			firstName: Joi.string().alphanum().trim(),
+			lastName: Joi.string().alphanum().trim(),
+			sex: Joi.any().valid(['male', 'female']),
+			address: Joi.string(),
+			profilePhotoUri: Joi.string().uri()
+		}
+	},
 };
