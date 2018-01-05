@@ -70,7 +70,7 @@ const UserSchema = new mongoose.Schema({
 	userStatus: {
 		type: String,
 		enum: ['normal', 'suspened'],
-		default: 'nomral'
+		default: 'normal'
 	}
 });
 
@@ -102,7 +102,7 @@ UserSchema.pre('save', function(next) {
  * Methods
  */
 UserSchema.methods = {
-	/** 
+	/**
 	 * Verify password validity
 	 * @param {string} password
 	 * @returns {Promise<boolean, Error>}

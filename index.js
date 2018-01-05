@@ -88,7 +88,8 @@ require('./config/db.config');
 // App routes
 app.use('/api', routes);
 
-app.use(errorHandler);
+// Error Handler
+if (process.env.NODE_ENV !== 'development') app.use(errorHandler);
 
 app.listen(config.port, () => {
 	console.log("Server is listening on port: " + config.port);

@@ -19,7 +19,8 @@ class AuthController extends BaseController {
 	login(req, res, next) {
 		const that = this;
 		passport.authenticate('local-login', { session: false }, function(err, user, info) {
-			if (err || info) return next(err || info);
+			if (err) return next(err);
+			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
 			user.update({ lastLoginAt: Date.now() })
 				.exec((err, result) => {

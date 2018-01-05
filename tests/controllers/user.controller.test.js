@@ -9,16 +9,39 @@ chai.config.includeStack = true;
 
 const userController = new Usercontroller();
 
-describe('Test user controller', function() {
+describe('Test user route', function() {
+	var token = '';
+	const admin = {
+		email: "jinguanglong11@icloud.com",
+		password: "1234567890"
+	};
+
+	const badAdmin = {
+		email: "jinguanglong11@icloud.com",
+		password: "12345678901"
+	};
+
+	before(function(done) {
+		request(app)
+			.post('/api/v1/auth/login')
+			.send(admin)
+			.then((res) => {
+				expect(res.body.user);
+				expect(res.body.token).to.be.a('string');
+				this.token = res.body.token;
+
+				done();
+			}).catch(done);
+	});
 
 	it("should return Users[] only if the user's role is 'admin'", function(done) {
+		const authToken = "Bearer " + this.token;
 		request(app)
 			.get('/api/v1/user/')
-			.set('Authorization', 'Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI1YTRhNGQ0ZTNmNWUxMzAyM2RlZjYzMjciLCJ0aWQiOiJjYjlkNmY2MC1lZjg5LTExZTctYjI2NS0wMTU3Zjk2NzdiZmMiLCJpYXQiOjE1MTQ4NzYwNzYsImV4cCI6MTUxNTA0ODg3Nn0.PxF5ACLAVRjQV8NoqlJIkl4CLeCNeYBcGxqpgS51GiiB8q7Yd2-506E_vBEzSCDlUvNWLo_sn9GSx9ucoYR3EU785WF420VvJ--leNArZEoMmhmAXmK-klI1qUO4Zpz1Q2Aw0mkNV2TKEhV1xjp9bePuwQWbvgSYoY3vnx0uS5QPxGJ3689w1S6N-JIVcH6CpwvMWtPAMZWRZJ1gu1zKTKDqgdOgPbfobxuK3LeUffDXSn7G7n9MGZN2pMkSVL1CoT_U5ROP5Trm-kUfqOXSw-maEi0hZ6EOJnG_QCyJChhcvWwwz5u8iBf-aiupdoWmKpNyYVEJvHPkh-TXAGJwxg')
-			.expect('Content-Type', /json/)
-			.expect(httpStatus.UNAUTHORIZED)
+			.set('Authorization', authToken)
+			.expect(httpStatus.OK)
 			.then((res) => {
-				console.log(res.body);
+				expect(res.body).to.be.an('array');
 
 				done();
 			}).catch(done);

@@ -49,7 +49,7 @@ class UserController extends BaseController {
 		UserController.authenticate(req, res, next)
 		.then((result) => {
 			const user = result.user;
-			const permission = (req.params.id === user.id.toString()) 
+			const permission = (req.params.id === user.id.toString())
 			? ac.can(user.role).readOwn('profile')
 			: ac.can(user.role).readAny('profile');
 
@@ -68,12 +68,13 @@ class UserController extends BaseController {
 	 * @role admin, regular user ownself
 	 * @property {string} req.body.password - user password
 	 * @property {string} req.body.passwordConfirmation - user password confirmation
-	 * @return {Object<User, token>}	 
+	 * @return {Object<User, token>}
 	 */
 	createNewUser(req, res, next) {
-		if (req.body.password !== req.body.passwordConfirmation) 
+		if (req.body.password !== req.body.passwordConfirmation)
 			return done(new APIError("Passwords do not match", httpStatus.BAD_REQUEST));
 
+		const that = this;
 		passport.authenticate('local-signup', { session: false }, function(err) {
 			if (err) return next(err);
 

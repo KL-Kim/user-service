@@ -49,7 +49,7 @@ passport.use('local-login', new LocalStrategy(credentialOptions, function(email,
 
 		user.isValidPassword(password).then((isMatch) => {
 				if (!isMatch) {
-					done(new APIError("Email or password invalid"), httpStatus.BAD_REQUEST);
+					done(new APIError("Email or password invalid", httpStatus.BAD_REQUEST));
 				} else {
 					done(null, user);
 				}
