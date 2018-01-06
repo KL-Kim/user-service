@@ -1,9 +1,9 @@
 import passport from 'passport';
+import httpStatus from 'http-status'
 
 import BaseController from './base.controller';
 import APIError from '../helper/api-error';
 import JwtManager from '../config/jwt.config';
-const User = require('../models/user.model');
 
 class AuthController extends BaseController {
 	constructor() {
@@ -28,9 +28,7 @@ class AuthController extends BaseController {
 
 					that._jwtManager.signToken(user.id)
 						.then((token) => {
-							return res.json({
-								token: token
-							});
+							return res.json({ token: token });
 					});
 				})
 				.catch((err) => {
@@ -47,15 +45,14 @@ class AuthController extends BaseController {
 	logout(req, res, next) {
 		const that = this;
 		passport.authenticate('jwt-rs', function(err, result, info) {
-			if (err || info) return next(err || info);
+			if (err) return next(err);
+			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
 			if (result) {
 				that._jwtManager.revokeToken(result.payload.tid)
 				.then((revokeToken) => {
 					if (revokeToken)
-						return res.json("Log out successfully");
-					else
-						return next();
+						return res.json({ok: 1});
 				}).catch((err) => {
 					return next(err);
 				});

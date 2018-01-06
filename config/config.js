@@ -47,8 +47,10 @@ const config = {
 		//issuer: envVars.JWT_ISSUER,
 		//audience: envVars.JWT_AUDIENCE,
 	},
-	jwtPrivateKey: fs.readFileSync(__dirname + '/secret/private.key.pem', 'utf8'),
-	jwtPublicKey: fs.readFileSync(__dirname + '/secret/public.key.pub', 'utf8')
+	serverPublicKey: fs.readFileSync(__dirname + '/secret/server.cert.pem', 'utf8'),
+	serverPrivateKey: fs.readFileSync(__dirname + '/secret/server.key.pem', 'utf8'),
+	jwtPrivateKey: fs.readFileSync(__dirname + '/secret/jwt.key.pem', 'utf8'),
+	jwtPublicKey: fs.readFileSync(__dirname + '/secret/jwt.cert.pem', 'utf8')
 };
 
 export default config;

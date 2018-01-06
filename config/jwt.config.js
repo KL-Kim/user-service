@@ -34,12 +34,15 @@ class jwtManager extends BaseAutoBindedClass {
 				uid: uid,
 				tid: uuid.v1()
 			};
-			let token = jwt.sign(payload, that._privateKey, that._options);
-			if (token) {
-				resolve(token);
-			} else {
+			jwt.sign(payload, that._privateKey, that._options, (err, token) => {
+				if (err) return reject(err)
+
+				if(token) {
+					return resolve(token);
+				} else {
 				reject(new APIError("Sign new token faild", httpStatus.INTERNAL_SERVER_ERROR));
-			}
+				}
+			});
 		});
 	}
 

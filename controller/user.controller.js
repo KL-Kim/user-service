@@ -120,23 +120,22 @@ class UserController extends BaseController {
 			: ac.can(user.role).readAny('profile');
 
 			if (permission.granted) {
-				user.update({
-					firstName: req.body.firstName,
-					lastName: req.body.lastName,
-					sex: req.body.sex,
-					address: req.body.address,
-					profilePhotoUrl: req.body.address,
-				});
-				// .exec().then((result) => {
-				// 	// if (err) next(err);
-				// 	return result;
-				// });
-				// User.update({id: user.id})
-				return res.json('updated');
+				return user.update({
+					firstName: req.body.firstName || '',
+					lastName: req.body.lastName  || '',
+					sex: req.body.sex || '',
+					address: req.body.address || '',
+					profilePhotoUrl: req.body.address || '',
+				}).exec();
 			} else {
-				return next(new APIError("Permission denied", httpStatus.UNAUTHORIZED))
+				return next(new APIError("Permission denied", httpStatus.UNAUTHORIZED));
 			}
-		}).catch((err) => {
+		}).then((result) => {
+			if (result.ok)
+				return res.json(result);
+			else return next(new APIError("Update failed", httpStatus.INTERNAL_SERVER_ERROR));
+		})
+		.catch((err) => {
 			return next(err);
 		});
 	}
