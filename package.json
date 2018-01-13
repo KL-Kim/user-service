@@ -7,6 +7,7 @@
     "test": "cross-env NODE_ENV=test mocha --require babel-core/register tests/**/*.test.js",
     "start": "babel-node server.js",
     "debug": "babel-node --inspect=0.0.0.0:9229 server.js ",
+    "log": "babel-node server.js 2> errors-file.log",
     "init-db": "babel-node tests/init.mongo.js"
   },
   "repository": {
@@ -31,6 +32,7 @@
     "bcrypt": "^1.0.3",
     "bluebird": "^3.5.1",
     "compression": "^1.7.1",
+    "cors": "^2.8.4",
     "csurf": "^1.9.0",
     "dotenv": "^4.0.0",
     "express": "^4.16.2",

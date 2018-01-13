@@ -32,7 +32,7 @@ passport.use('local-signup', new LocalStrategy(credentialOptions, function(email
 		} else {
 			return done(null);
 		}
-		
+
 	}).catch((error) => {
 		return done(error);
 	});

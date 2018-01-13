@@ -1,3 +1,5 @@
+'use strict';
+
 import Promise from 'bluebird';
 import request from 'supertest';
 import httpStatus from 'http-status';

@@ -31,7 +31,7 @@ class UserController extends BaseController {
 			if (permission.granted) {
 				return User.getUsersList({ limit, skip });
 			} else {
-				return next(new APIError("Permission denied", httpStatus.UNAUTHORIZED));
+				return next(new APIError("Permission denied", httpStatus.FORBIDDEN));
 			}
 		})
 		.then(users => res.json(users))
@@ -57,7 +57,7 @@ class UserController extends BaseController {
 			if (permission.granted) {
 				return res.json(user);
 			} else {
-				return next(new APIError("Permission denied", httpStatus.UNAUTHORIZED))
+				return next(new APIError("Permission denied", httpStatus.FORBIDDEN))
 			}
 		}).catch((err) => {
 			return next(err);
@@ -128,7 +128,7 @@ class UserController extends BaseController {
 					profilePhotoUrl: req.body.address || '',
 				}).exec();
 			} else {
-				return next(new APIError("Permission denied", httpStatus.UNAUTHORIZED));
+				return next(new APIError("Permission denied", httpStatus.FORBIDDEN));
 			}
 		}).then((result) => {
 			if (result.ok)
@@ -152,6 +152,7 @@ class UserController extends BaseController {
 				if (info) return reject(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
 				if (result.user) {
+					// req.user = result.user;
 					return resolve(result);
 				} else {
 					return reject(new APIError("Permission denied", httpStatus.UNAUTHORIZED));

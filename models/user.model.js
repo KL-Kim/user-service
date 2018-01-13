@@ -55,6 +55,10 @@ const UserSchema = new mongoose.Schema({
 	address: {
 		type: String
 	},
+	point: {
+		type: Number,
+		default: 0
+	},
 	createdAt: {
 		type: Date,
 		default: Date.now

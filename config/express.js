@@ -13,7 +13,7 @@ import csp from 'helmet-csp';
 import logger from 'morgan';
 import errorHandler from '../helper/error-handler.js'
 
-import config from './config';
+import cors from './cors.config';
 import passport from './passport.config';
 import routes from '../routes/index.route';
 
@@ -32,9 +32,16 @@ app.use(methodOverride());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json({ limit: '20mb' }));
 
-// app.use(csurf());
+// Security Concern
+// The sessionID should never be cached
+app.use((req, res, next) => {
+	res.header('Cache-Control', 'no-cache="Set-Cookie, Set-Cookie2"');
+	next();
+});
+
 app.use(helmet());
 app.use(helmet.hidePoweredBy());
+// app.use(csurf());
 
 app.use(csp({
   // Specify directives as normal.
@@ -72,17 +79,13 @@ app.use(csp({
   browserSniff: true
 }));
 
-// The sessionID should never be cached
-app.use((req, res, next) => {
-	res.header('Cache-Control', 'no-cache="Set-Cookie, Set-Cookie2"');
-	next();
-});
+app.use(cors);
 
-// Passport related
+// Passport Initialization
 app.use(passport.initialize());
 
 // Connect MongoDB
-require('./db.config');
+const db = require('./db.config');
 
 // App routes
 app.use('/api', routes);
