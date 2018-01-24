@@ -3,22 +3,23 @@ import Express from 'express';
 import compression from 'compression';
 import bodyParser from 'body-parser';
 import methodOverride from 'method-override';
+import cookieParser from 'cookie-parser';
 
-// For security concern
+// Security concern
 import helmet from 'helmet';
-import csp from 'helmet-csp';
-// import csurf from 'csurf';
+import cors from './security/cors.config';
+// import csurf from './security/csurf.config';
+// import csp from './security/csp.config';
 
-// For debugging and monitoring
+// Debugging and monitoring
 import logger from 'morgan';
 import errorHandler from '../helper/error-handler.js'
 
-import cors from './cors.config';
+// Passport Configuration
 import passport from './passport.config';
-import routes from '../routes/index.route';
 
-// make bluebird as native Promise
-// Promise = require('bluebird');
+// Router
+import routes from '../routes/index.route';
 
 const app = new Express();
 
@@ -28,58 +29,22 @@ if (process.env.NODE_ENV === 'development') {
 	app.use(compress());
 }
 
-app.use(methodOverride());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json({ limit: '20mb' }));
-
-// Security Concern
 // The sessionID should never be cached
 app.use((req, res, next) => {
 	res.header('Cache-Control', 'no-cache="Set-Cookie, Set-Cookie2"');
 	next();
 });
 
+app.use(cookieParser());
 app.use(helmet());
 app.use(helmet.hidePoweredBy());
-// app.use(csurf());
-
-app.use(csp({
-  // Specify directives as normal.
-  directives: {
-    defaultSrc: ["'self'", 'default.com'],
-    scriptSrc: ["'self'", "'unsafe-inline'"],
-    styleSrc: ['style.com'],
-    fontSrc: ["'self'", 'fonts.com'],
-    imgSrc: ['img.com', 'data:'],
-    sandbox: ['allow-forms', 'allow-scripts'],
-    reportUri: '/report-violation',
-    objectSrc: ["'none'"],
-    upgradeInsecureRequests: true
-  },
-
-  // This module will detect common mistakes in your directives and throw errors
-  // if it finds any. To disable this, enable "loose mode".
-  loose: false,
-
-  // Set to true if you only want browsers to report errors, not block them.
-  // You may also set this to a function(req, res) in order to decide dynamically
-  // whether to use reportOnly mode, e.g., to allow for a dynamic kill switch.
-  reportOnly: false,
-
-  // Set to true if you want to blindly set all headers: Content-Security-Policy,
-  // X-WebKit-CSP, and X-Content-Security-Policy.
-  setAllHeaders: false,
-
-  // Set to true if you want to disable CSP on Android where it can be buggy.
-  disableAndroid: false,
-
-  // Set to false if you want to completely disable any user-agent sniffing.
-  // This may make the headers less compatible but it will be much faster.
-  // This defaults to `true`.
-  browserSniff: true
-}));
-
 app.use(cors);
+// app.use(csurf);
+// app.use(csp);
+app.use(methodOverride());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: '20mb' }));
+
 
 // Passport Initialization
 app.use(passport.initialize());

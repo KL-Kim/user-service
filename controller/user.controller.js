@@ -4,7 +4,7 @@ import httpStatus from 'http-status';
 
 import BaseController from './base.controller';
 import APIError from '../helper/api-error';
-import JwtManager from '../config/jwt.config';
+import JwtManager from '../helper/jwt.manager';
 import ac from '../config/rbac.config';
 import User from '../models/user.model';
 
@@ -90,6 +90,10 @@ class UserController extends BaseController {
 				return that._jwtManager.signToken(savedUser.id);
 			})
 			.then((token) => {
+				res.cookie('jwt', token, {
+					expiresIn: new Date(Date.now() + 60 * 1000),
+					httpOnly: true
+				});
 				return res.json({
 					user: user.toJSON(),
 					token: token

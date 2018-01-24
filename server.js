@@ -46,5 +46,5 @@ import app from './config/express';
 
 // For frontend development
 app.listen(config.port, () => {
-  console.log(`Server istening on port: ${config.port}`);
+  console.log(`User-sevice Server istening on port: ${config.port}`);
 });

@@ -3,7 +3,7 @@ import httpStatus from 'http-status'
 
 import BaseController from './base.controller';
 import APIError from '../helper/api-error';
-import JwtManager from '../config/jwt.config';
+import JwtManager from '../helper/jwt.manager';
 
 class AuthController extends BaseController {
 	constructor() {
@@ -28,7 +28,14 @@ class AuthController extends BaseController {
 
 					that._jwtManager.signToken(user.id)
 						.then((token) => {
-							return res.json({ token: token });
+							res.cookie('jwt', token, {
+								expires: new Date(Date.now() + 60 * 1000),
+								httpOnly: true
+							});
+							return res.json({
+								user: user,
+								token: token
+							});
 					});
 				})
 				.catch((err) => {

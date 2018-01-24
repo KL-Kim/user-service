@@ -1,6 +1,6 @@
 /**
  * Database Config
- * @export {Mongoose}
+ * @export {Mongoose Object}
  * @version 0.0.1
  */
 
@@ -10,7 +10,7 @@ import config from './config';
 
 mongoose.Promise = Promise;
 const mongoUri = `${config.mongo.host}:${config.mongo.port}/user-serivce`;
-mongoose.connect(mongoUri, { 
+mongoose.connect(mongoUri, {
 	useMongoClient: true,
 	promiseLibrary: Promise,
 	keepAlive: 3000000,

@@ -9,10 +9,10 @@ import Promise from 'bluebird';
 import jwt from 'jsonwebtoken';
 import uuid from 'uuid';
 
-import config from './config.js';
-import APIError from '../helper/api-error';
+import config from '../config/config.js';
+import APIError from './api-error';
 import RevokedToken from '../models/revoked-token.model';
-import BaseAutoBindedClass from '../helper/base-autobind.js';
+import BaseAutoBindedClass from './base-autobind.js';
 
 class jwtManager extends BaseAutoBindedClass {
 	constructor() {
