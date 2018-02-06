@@ -56,6 +56,6 @@ const db = require('./db.config');
 app.use('/api', routes);
 
 // Error Handler
-if (process.env.NODE_ENV !== 'development') app.use(errorHandler);
+app.use(errorHandler);
 
 export default app;

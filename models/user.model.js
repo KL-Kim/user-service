@@ -19,12 +19,6 @@ const UserSchema = new mongoose.Schema({
 			unique: true
 		}
 	},
-	role: {
-		type: String,
-		required: true,
-		default: 'regular',
-		enum: ['god', 'admin', 'manager', 'regular']
-	},
 	email: {
 		type: String,
 		unique: true,
@@ -36,6 +30,12 @@ const UserSchema = new mongoose.Schema({
 	},
 	mobileNumber: {
 		type: String,
+	},
+	role: {
+		type: String,
+		required: true,
+		default: 'regular',
+		enum: ['god', 'admin', 'manager', 'regular']
 	},
 	password: {
 		type: String,
@@ -59,23 +59,26 @@ const UserSchema = new mongoose.Schema({
 		type: Number,
 		default: 0
 	},
-	createdAt: {
-		type: Date,
-		default: Date.now
-	},
-	lastLoginAt: {
-		type: Date,
-		default: Date.now
+	userStatus: {
+		type: String,
+		enum: ['normal', 'suspened'],
+		default: 'normal'
 	},
 	profilePhotoUri: {
 		type: String,
 		default: ''
 	},
-	userStatus: {
-		type: String,
-		enum: ['normal', 'suspened'],
-		default: 'normal'
-	}
+	lastLoginIp: {
+		type: String
+	},
+	lastLoginAt: {
+		type: Date,
+		default: Date.now
+	},
+	createdAt: {
+		type: Date,
+		default: Date.now
+	},
 });
 
 /**
