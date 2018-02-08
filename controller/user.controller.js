@@ -76,7 +76,7 @@ class UserController extends BaseController {
 			return done(new APIError("Passwords do not match", httpStatus.BAD_REQUEST));
 
 		const that = this;
-		passport.authenticate('local-signup', { session: false }, function(err) {
+		passport.authenticate('local-register', { session: false }, function(err) {
 			if (err) return next(err);
 
 			let data = req.body;

@@ -22,7 +22,7 @@ const credentialOptions = {
 };
 
 // Sign up passport-local strategy
-passport.use('local-signup', new LocalStrategy(credentialOptions, function(email, password, done) {
+passport.use('local-register', new LocalStrategy(credentialOptions, function(email, password, done) {
 	User.findOne({ email: email }).exec((err, user) => {
 		if (err)
 			return done(err);
