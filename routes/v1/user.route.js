@@ -7,7 +7,7 @@ import paramValidation from '../../config/param-validation';
 const router = Express.Router();
 const userController = new UserController();
 
-/** POST /api/v1/user/signup - Create new user **/
+/** POST /api/v1/user/register - Create new user **/
 router.post('/register', validate(paramValidation.createUser), userController.createNewUser);
 
 /** GET /api/v1/user - Get list of users **/

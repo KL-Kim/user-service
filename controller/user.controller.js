@@ -1,10 +1,12 @@
 import Promise from 'bluebird';
 import passport from 'passport';
 import httpStatus from 'http-status';
+import crypto from 'crypto';
 
 import BaseController from './base.controller';
 import APIError from '../helper/api-error';
 import JwtManager from '../helper/jwt.manager';
+import promiseFor from '../helper/promise-for';
 import ac from '../config/rbac.config';
 import User from '../models/user.model';
 
@@ -80,26 +82,51 @@ class UserController extends BaseController {
 			if (err) return next(err);
 
 			let data = req.body;
-			let user = new User({
-				username: data.username,
-				password: data.password,
-				email: data.email
-			});
-			user.save()
-			.then((savedUser) => {
-				return that._jwtManager.signToken(savedUser.id);
+			let username = data.email.substring(0, data.email.lastIndexOf('@'));
+			let newUsername;
+			let count = 1;
+
+			promiseFor(
+				(userExist) => {
+					return userExist;
+				},
+				(username) => {
+					return new Promise(function(resolve) {
+						User.getByUsername(username).then((user) => {
+							if (user) {
+								username = username + '-' + crypto.randomBytes(2).toString('hex').substring(0,3);
+								resolve(username);
+							} else {
+								newUsername = username;
+								return resolve(false);
+							}
+						});
+					});
+				},
+				username
+			)
+			.then(() => {
+				let user = new User({
+					username: newUsername,
+					password: data.password,
+					email: data.email
+				});
+				return user.save();
 			})
-			.then((token) => {
+			.then((savedUser) => {
+				let token = that._jwtManager.signToken(savedUser.id);
+				return Promise.all([savedUser, token]);
+			})
+			.then(([user, token]) => {
 				res.cookie('jwt', token, {
 					expiresIn: new Date(Date.now() + 60 * 1000),
 					httpOnly: true
 				});
-				return res.json({
+				return res.status(201).json({
 					user: user.toJSON(),
 					token: token
 				});
-			})
-			.catch((error) => {
+			}).catch((error) => {
 				return next(error);
 			});
 		})(req, res, next);
@@ -110,7 +137,7 @@ class UserController extends BaseController {
 	 * @role admin, regular user ownself
 	 * @property {string} req.body.firstName - User first name
 	 * @property {string} req.body.lastName - User last name
-	 * @property {string} req.body.sex - User sex
+	 * @property {string} req.body.gender - User gender
 	 * @property {string} req.body.address - User address
 	 * @property {string} req.body.profilePhotoUri - User last name
 	 * @return {Object<User, token>}
@@ -127,7 +154,7 @@ class UserController extends BaseController {
 				return user.update({
 					firstName: req.body.firstName || '',
 					lastName: req.body.lastName  || '',
-					sex: req.body.sex || '',
+					gender: req.body.gender || '',
 					address: req.body.address || '',
 					profilePhotoUrl: req.body.address || '',
 				}).exec();

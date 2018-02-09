@@ -71,7 +71,7 @@ jwtOptions.jsonWebTokenOptions = {
 };
 
 passport.use('jwt-rs', new JwtStrategy(jwtOptions, function(jwt_payload, done) {
-	User.findById(jwt_payload.uid).exec().then((user) => {
+	User.getById(jwt_payload.uid).then((user) => {
 		if (user) {
 			return done(null, {
 				payload: jwt_payload,

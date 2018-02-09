@@ -129,7 +129,7 @@ UserSchema.methods = {
 		delete obj.password;
 		delete obj.__v;
 		return obj;
-	}
+	},
 };
 
 /**
@@ -138,16 +138,17 @@ UserSchema.methods = {
 UserSchema.statics = {
 	// Get user by Id
 	getById(id) {
-		return this.findById(id)
-			.exec()
-			.then((user) => {
-				if (user) {
-					return user;
-				}
+		return this.findById(id).exec()
+	},
 
-				const err = new APIError('No such user exists', httpStatus.NOT_FOUND);
-				return Promise.reject(err);
-			});
+	// Get user by username
+	/**
+	 * Get user by username
+	 * @param {string} username - User's usernameField
+	 * @returns {<User>, false}
+	 */
+	getByUsername(username) {
+		return this.findOne({ 'username': username }).exec();
 	},
 
 	/**
