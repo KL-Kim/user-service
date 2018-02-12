@@ -7,6 +7,7 @@
 import fs from 'fs';
 import Joi from 'joi';
 import ms from 'ms';
+import mailAccount from './secret/mail-account';
 require('dotenv').config();
 
 function setConfig() {
@@ -47,7 +48,8 @@ function setConfig() {
 			expiresIn: envVars.JWT_EXPIRATION,
 			//issuer: envVars.JWT_ISSUER,
 			//audience: envVars.JWT_AUDIENCE,
-		}
+		},
+		mailAccount: mailAccount,
 	};
 
 	try {
