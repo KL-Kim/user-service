@@ -14,7 +14,7 @@ const grants = {
 	},
 	regular: {
 		profile: {
-			"read:own": ["*", "!id","!password", "!role"],
+			"read:own": ["*", "!id", "!password"],
 			"update:own": ["*", "!role"],
 		},
 		reviews: {
@@ -83,4 +83,8 @@ const grants = {
 	}
 };
 
-export default new AccessControl(grants);
+const ac = new AccessControl(grants);
+
+ac.lock();
+
+export default ac;

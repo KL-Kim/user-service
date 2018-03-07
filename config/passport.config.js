@@ -22,66 +22,93 @@ const credentialOptions = {
 };
 
 // Sign up passport-local strategy
-passport.use('local-register', new LocalStrategy(credentialOptions, function(email, password, done) {
-	User.findOne({ email: email }).exec((err, user) => {
-		if (err)
-			return done(err);
-
+passport.use('local-register', new LocalStrategy(credentialOptions, (email, password, done) => {
+	User.getByEmail(email).then((user) => {
 		if (user) {
 			return done(new APIError("The email already exists", httpStatus.CONFLICT));
 		} else {
-			return done(null);
+			return done();
 		}
-
-	}).catch((error) => {
-		return done(error);
 	});
 }));
 
 // Login passport-local strategy
-passport.use('local-login', new LocalStrategy(credentialOptions, function(email, password, done) {
-	User.findOne({ email: email }).exec((err, user) => {
-		if (err)
-			return done(err);
-
+passport.use('local-login', new LocalStrategy(credentialOptions, (email, password, done) => {
+	User.getByEmail(email).then((user) => {
 		if (!user)
 			return done(new APIError("Invalid email or password", httpStatus.UNAUTHORIZED));
 
 		user.isValidPassword(password).then((isMatch) => {
-				if (!isMatch) {
-					done(new APIError("Invalid email or password", httpStatus.UNAUTHORIZED));
-				} else {
-					done(null, user);
-				}
-			});
-	}).catch((error) => {
-		return done(error);
+			if (!isMatch) {
+				return done(new APIError("Invalid email or password", httpStatus.UNAUTHORIZED));
+			} else {
+				return done(null, user);
+			}
+		});
 	});
+
+	// User.findOne({ email: email }, (err, user) => {
+	// 	if (err) return done(err);
+  //
+	// 	user.isValidPassword(password).then((isMatch) => {
+	// 		if (!isMatch) {
+	// 			return done(new APIError("Invalid email or password", httpStatus.UNAUTHORIZED));
+	// 		} else {
+	// 			return done(null, user);
+	// 		}
+	// 	});
+	// });
 }));
 
-// Passport-jwt strategy
-const jwtOptions = {};
-jwtOptions.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
-jwtOptions.secretOrKey = config.jwtPublicKey;
-jwtOptions.algorithm = config.jwtOptions.algorithm;
-jwtOptions.issuer = config.jwtOptions.issuer || '';
-jwtOptions.audience = config.jwtOptions.audience || '';
-jwtOptions.jsonWebTokenOptions = {
-	expiresIn: config.jwtOptions.expiresIn
+// Extract refresh token from cookie.
+const cookieExtractor = (req) => {
+	var token = null;
+	if (req && req.cookies) token = req.cookies['refresh-token'];
+	return token;
 };
 
-passport.use('jwt-rs', new JwtStrategy(jwtOptions, function(jwt_payload, done) {
-	User.getById(jwt_payload.uid).then((user) => {
+// Passport-jwt refresh token strategy options
+const refreshTokenOptions = {};
+refreshTokenOptions.jwtFromRequest = cookieExtractor;
+refreshTokenOptions.secretOrKey = config.refreshTokenPublicKey;
+refreshTokenOptions.algorithm = config.refreshTokenOptions.algorithm;
+refreshTokenOptions.issuer = config.refreshTokenOptions.issuer || '';
+refreshTokenOptions.audience = config.refreshTokenOptions.audience || '';
+refreshTokenOptions.jsonWebTokenOptions = {
+	expiresIn: config.refreshTokenOptions.expiresIn
+};
+
+passport.use('refresh-token', new JwtStrategy(refreshTokenOptions, (payload, done) => {
+	User.getById(payload.uid).then((user) => {
 		if (user) {
 			return done(null, {
-				payload: jwt_payload,
+				payload: payload,
 				user: user
 			}, false);
 		} else {
 			return done(new APIError("User do not exists", httpStatus.NOT_FOUND));
 		}
-	}).catch(err => {
-		done(err, false, false)
+	});
+}));
+
+// Passport-jwt access token strategy options
+const accessTokenOptions = {};
+accessTokenOptions.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
+accessTokenOptions.secretOrKey = config.accessTokenPublicKey;
+accessTokenOptions.algorithm = config.accessTokenOptions.algorithm;
+accessTokenOptions.issuer = config.accessTokenOptions.issuer || '';
+accessTokenOptions.audience = config.accessTokenOptions.audience || '';
+accessTokenOptions.jsonWebTokenOptions = {
+	expiresIn: config.accessTokenOptions.expiresIn
+};
+
+passport.use('access-token', new JwtStrategy(accessTokenOptions, (payload, done) =>{
+	User.getById(payload.uid).then((user) => {
+		if (user) {
+			return done(null, user, false);
+		} else {
+			return done(new APIError("User do not exists", httpStatus.NOT_FOUND));
+		}
 	});
 }));
 

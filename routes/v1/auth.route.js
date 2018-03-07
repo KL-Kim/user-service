@@ -13,4 +13,10 @@ router.post('/login', validate(paramValidation.login), authController.login);
 /** GET /api/v1/auth/logout - User logout **/
 router.get('/logout', authController.logout);
 
+/** GET /api/v1/auth/token - Issue access token **/
+router.get('/token', authController.issueAccessToken);
+
+/** GET /api/v1/auth/verify - Account Verification **/
+router.get('/verify', authController.accountVerification);
+
 export default router;

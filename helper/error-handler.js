@@ -5,7 +5,7 @@
 
 function errorHandler(err, req, res, next) {
 
-	if (req.app.get('env') !== 'development') {
+	if (process.env.NODE_ENV !== 'development') {
 		delete err.stack;
 	}
 

@@ -16,7 +16,13 @@ router.get('/', validate(paramValidation.getUsersList), userController.getUsersL
 /** GET /api/v1/user/:id - Get user data **/
 router.get('/:id', validate(paramValidation.getUserById), userController.getUserById);
 
-/** Put /api/v1/user/:id - Edit user info **/
+/** PUT /api/v1/user/:id - Edit user info **/
 router.put('/:id', validate(paramValidation.updateUser), userController.updateUser);
+
+/** POST /api/v1/user/mail/password - Change password **/
+router.post('/mail/password', validate(paramValidation.checkEmail), userController.sendChangePasswordEmail);
+
+/** post /api/v1/auth/password - Account Verification **/
+router.post('/password', validate(paramValidation.changePassword), userController.changePassword);
 
 export default router;

@@ -10,7 +10,7 @@ export default {
 	createUser: {
 		body: {
 			email: Joi.string().email().required(),
-			password: Joi.string().min(6).strip().required(),
+			password: Joi.string().min(8).strip().required(),
 			passwordConfirmation: Joi.any().valid(Joi.ref('password')).options({ language: { any: { allowOnly: 'Passwords do not match' } } }).required(),
 		}
 	},
@@ -41,9 +41,22 @@ export default {
 		body: {
 			firstName: Joi.string().alphanum().trim(),
 			lastName: Joi.string().alphanum().trim(),
-			sex: Joi.any().valid(['male', 'female']),
+			gender: Joi.any().valid(['male', 'female']),
 			address: Joi.string(),
 			profilePhotoUri: Joi.string().uri()
+		}
+	},
+
+	checkEmail: {
+		body: {
+			email: Joi.string().email().required(),
+		}
+	},
+
+	changePassword: {
+		body: {
+			password: Joi.string().min(8).strip().required(),
+			passwordConfirmation: Joi.any().valid(Joi.ref('password')).options({ language: { any: { allowOnly: 'Passwords do not match' } } }).required(),
 		}
 	},
 };

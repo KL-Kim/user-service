@@ -1,9 +1,11 @@
 import passport from 'passport';
-import httpStatus from 'http-status'
+import httpStatus from 'http-status';
+import ms from 'ms';
 
 import BaseController from './base.controller';
 import APIError from '../helper/api-error';
 import JwtManager from '../helper/jwt.manager';
+import config from '../config/config';
 
 class AuthController extends BaseController {
 	constructor() {
@@ -18,54 +20,113 @@ class AuthController extends BaseController {
  		*/
 	login(req, res, next) {
 		const that = this;
-		passport.authenticate('local-login', { session: false }, function(err, user, info) {
+		passport.authenticate('local-login', { session: false }, (err, user, info) => {
 			if (err) return next(err);
 			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
-			user.update({ lastLoginAt: Date.now() })
-				.exec((err, result) => {
-					if (err) next(err);
+			user.update({ lastLoginAt: Date.now() }, { lastLoginIp: req.headers['x-forwarded-for'] || req.connection.remoteAddress })
+				.exec().then((result) => {
+					that._jwtManager.signToken('refresh', user.id)
+						.then((refreshToken) => {
+							res.cookie('refresh-token', refreshToken, {
+								"maxAge": ms(config.refreshTokenOptions.expiresIn),
+								"httpOnly": true,
+							});
 
-					that._jwtManager.signToken(user.id)
-						.then((token) => {
-							res.cookie('jwt', token, {
-								expires: new Date(Date.now() + 60 * 1000),
-								httpOnly: true
-							});
+							return user.id;
+						}).then((uid) => {
+							return that._jwtManager.signToken('access', uid);
+						}).then((accessToken) => {
 							return res.json({
-								user: user,
-								token: token
+								"user": user,
+								"token": accessToken
 							});
-					});
-				})
-				.catch((err) => {
-					return next(err);
+						}).catch((err) => {
+							return next(err);
+						});
 				});
 		})(req, res, next);
 	}
 
 	/**
+	 * Issue access Token
+	 * @returns {token}
+	 */
+	 issueAccessToken(req, res, next) {
+		const that = this;
+		passport.authenticate('refresh-token', { session: false }, (err, result, info) => {
+			if (err) return next(err);
+			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
+
+			that._jwtManager.signToken('access', result.user.id).then((token) => {
+				return res.json({
+					"token": token,
+				});
+			}).catch((err) => {
+				return next(err);
+			});
+		})(req, res, next);
+	 }
+
+	/**
 	 * User log out and revoke token
 	 * @role *
-	 * @returns {true}
+	 * @returns {object}
 	 */
 	logout(req, res, next) {
 		const that = this;
-		passport.authenticate('jwt-rs', function(err, result, info) {
+		passport.authenticate('access-token', function(err, result, info) {
 			if (err) return next(err);
 			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
 			if (result) {
-				that._jwtManager.revokeToken(result.payload.tid)
+				that._jwtManager.revokeRefreshToken(result.payload.tid)
 				.then((revokeToken) => {
 					if (revokeToken)
-						return res.json({ok: 1});
+						return res.status(204).json({status: 'ok'});
 				}).catch((err) => {
 					return next(err);
 				});
 			}
-			return ;
 		})(req, res, next);
+	}
+
+	/**
+	 * Verify account
+	 * @role *
+	 * @returns {none}
+	 */
+	accountVerification(req, res, next) {
+		// Check jwt token, and account is verified if sign is true.
+		passport.authenticate('access-token', { session: false }, (err, user, info) => {
+			if (err) return next(err);
+			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
+
+			if (user.isVerified) {
+				return res.status(200).json({
+					"user": user
+				});
+			} else {
+				user.update({ isVerified: true }, (err, user) => {
+					if (err) return next(err);
+
+					if (user)
+						return res.status(200).json({
+							"user": user
+						});
+				});
+			}
+		})(req, res, next);
+	}
+
+	/**
+	 * Change password
+	 * @role *
+	 * @returns {none}
+	 */
+	changePassword(req, res, next) {
+		// Check jwt token, and set new password if sign is true.
+		return res.json("change passwore goes here");
 	}
 }
 

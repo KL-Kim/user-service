@@ -64,6 +64,10 @@ const UserSchema = new mongoose.Schema({
 		enum: ['normal', 'suspened'],
 		default: 'normal'
 	},
+	isVerified: {
+		type: Boolean,
+		default: false
+	},
 	profilePhotoUri: {
 		type: String,
 		default: ''
@@ -99,11 +103,27 @@ UserSchema.pre('save', function(next) {
 
 	bcrypt.hash(user.password, saltRounds).then((hash) => {
 		user.password = hash;
-		next();
+		return next();
 	}).catch((err) => {
-		next(new APIError("Hashing password failed", httpStatus.INTERNAL_SERVER_ERROR));
+		return next(new APIError("Hashing password failed", httpStatus.INTERNAL_SERVER_ERROR));
 	});
 });
+
+UserSchema.pre('update', function(next) {
+	let query = this;
+	let update = query.getUpdate();
+
+	if (!update.password) {
+		return next();
+	}
+
+	bcrypt.hash(update.password, saltRounds).then((hash) => {
+		update.password = hash;
+		return next();
+	}).catch((err) => {
+		return next(new APIError("Hashing password failed", httpStatus.INTERNAL_SERVER_ERROR));
+	});
+})
 
 /**
  * Methods
@@ -117,9 +137,9 @@ UserSchema.methods = {
 	isValidPassword(password) {
 		return new Promise((resolve, reject) => {
 			bcrypt.compare(password, this.password).then((res) => {
-				resolve(res);
+				return resolve(res);
 			}).catch((err) => {
-				reject(err);
+				return reject(err);
 			});
 		});
 	},
@@ -138,7 +158,17 @@ UserSchema.methods = {
 UserSchema.statics = {
 	// Get user by Id
 	getById(id) {
-		return this.findById(id).exec()
+		return this.findById(id).exec();
+	},
+
+	// Get user by name
+	getByEmail(email) {
+		return this.findOne({ email: email }).exec();
+	},
+
+	// Get user by username
+	getByUsername(username) {
+		return this.findOne({ username: username }).exec();
 	},
 
 	// Get user by username

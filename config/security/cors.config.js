@@ -4,7 +4,7 @@
 import cors from 'cors';
 
 const whitelist = [
-		'http://localhost:3000',
+		'http://localhost:8080',
 ];
 
 let corsOptions = {
@@ -12,7 +12,7 @@ let corsOptions = {
 	credentials: true,
 }
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV !== 'development' ) {
 	corsOptions.origin = (origin, callback) => {
 		if (whitelist.indexOf(origin) !== -1) {
 		 callback(null, true)

@@ -17,43 +17,67 @@ import BaseAutoBindedClass from './base-autobind.js';
 class jwtManager extends BaseAutoBindedClass {
 	constructor() {
 		super();
-		this._privateKey = this._providePrivateKey();
-		this._publicKey = this._providePublicKey();
-		this._options = this._provideOptions();
+
+		// Refresh Token related
+		this._refreshTokenPrivateKey = this._provideRefreshTokenPrivateKey();
+		this._refreshTokenPublickKey = this._provideRefreshTokenPublicKey();
+		this._refreshTokenOptions = this._provideRefreshTokenOptions();
+
+		// Access Token related
+		this._accessTokenPrivateKey = this._provideAccessTokenPrivateKey();
+		this._accessTokenPublicKey = this._provideAccessTokenPublicKey();
+		this._accessTokenOptions = this._provideAccessTokenOptions();
+
 	}
 
 	/**
-	 * Sign new token
-	 * @param {ObjectId} uid - The objectId of user.
+	 * Sign new refresh token
+	 * @param {string} type - Json web token type
+	 * @param {ObjectId} uid - The objectId of user
 	 * @returns {Promise<token, APIError>}
 	 */
-	signToken(uid) {
+	signToken(type, uid) {
 		const that = this;
 		return new Promise((resolve, reject) => {
 			let payload = {
 				uid: uid,
 				tid: uuid.v1()
 			};
-			jwt.sign(payload, that._privateKey, that._options, (err, token) => {
-				if (err) return reject(err)
+			let privateKey;
+			let options;
 
-				if(token) {
-					return resolve(token);
-				} else {
-				reject(new APIError("Sign new token faild", httpStatus.INTERNAL_SERVER_ERROR));
-				}
-			});
+			if (type === 'refresh') {
+				privateKey = that._refreshTokenPrivateKey;
+				options = that._refreshTokenOptions;
+			} else if (type === 'access'){
+				privateKey = that._accessTokenPrivateKey;
+				options = that._accessTokenOptions;
+			}
+
+			if (privateKey && options) {
+				jwt.sign(payload, privateKey, options, (err, token) => {
+					if (err) return reject(err);
+
+					if (token) {
+						return resolve(token);
+					} else {
+						reject(new APIError("Sign new token faild", httpStatus.INTERNAL_SERVER_ERROR, true));
+					}
+				});
+			} else {
+				reject(new APIError("Invalid token type", httpStatus.INTERNAL_SERVER_ERROR, true));
+			}
 		});
 	}
 
 	/**
-	 * Revoke token and save to db1
+	 * Revoke refresh token and save to db
 	 * @property {string} tid - token's id
 	 * @returns {Promise<RevokedToken, Error>}
 	 */
-	revokeToken(tid) {
+	revokeRefreshToken(tid) {
 		return new Promise((resolve, reject) => {
-			RevokedToken.findOne({ id: tid }).exec((err, result) => {
+			RevokedToken.findOne({ id: tid }, (err, result) => {
 				if (err) return reject(err);
 
 				if (result) {
@@ -66,50 +90,88 @@ class jwtManager extends BaseAutoBindedClass {
 						resolve(revokedToken);
 					});
 				}
-			}).catch((err) => {
-				reject(err);
 			});
 		});
 	}
 
 	/**
-	 * Get jwt public key
+	 * Get refresh token public key
 	 * @returns {string}
 	 */
-	_providePublicKey() {
-		return config.jwtPublicKey;
+	_provideRefreshTokenPublicKey() {
+		return config.refreshTokenPublicKey;
 	}
 
 	/**
-	 * Get jwt private key
+	 * Get refresh token private key
 	 * @returns {string}
 	 */
-	_providePrivateKey() {
-		return config.jwtPrivateKey;
+	_provideRefreshTokenPrivateKey() {
+		return config.refreshTokenPrivateKey;
 	}
 
 	/**
-	 * Get jwt options
+	 * Get refresh token options
 	 * @returns {Object}
 	 */
-	_provideOptions() {
-		return config.jwtOptions;
+	_provideRefreshTokenOptions() {
+		return config.refreshTokenOptions;
 	}
 
 	/**
-	 * Verify token
-	 * @param {string} token - user's token
-	 * @param {function} callback - callback function
-	 * @returns {*}
+	 * Get refresh token public key
+	 * @returns {string}
 	 */
-	_verify(token) {
-		return new Promise((resolve, reject) => {
-			jwt.verify(token, this._publicKey, this._options, (err, decoded) => {
-				if (err) return reject(err);
-				else return resolve(decoded);
-			});
-		});
+	_provideAccessTokenPublicKey() {
+		return config.accessTokenPublicKey;
 	}
+
+	/**
+	 * Get refresh token private key
+	 * @returns {string}
+	 */
+	_provideAccessTokenPrivateKey() {
+		return config.accessTokenPrivateKey;
+	}
+
+	/**
+	 * Get refresh token options
+	 * @returns {Object}
+	 */
+	_provideAccessTokenOptions() {
+		return config.accessTokenOptions;
+	}
+
+	// /**
+	//  * Verify refresh token (Unused by passport-jwt)
+	//  * @param {string} token - user's token
+	//  * @param {function} callback - callback function
+	//  * @returns {*}
+	//  */
+	// verifyToken(type, token) {
+	// 	const that = this;
+	// 	return new Promise((resolve, reject) => {
+	// 		let publicKey;
+	// 		let options;
+  //
+	// 		if (type === 'refresh') {
+	// 			publicKey = that._refreshTokenPublicKey;
+	// 			options = that._refreshTokenOptions;
+	// 		} else if (type === 'access'){
+	// 			publicKey = that._accessTokenPublicKey;
+	// 			options = that._accessTokenOptions;
+	// 		}
+  //
+	// 		if (publicKey && options) {
+	// 			jwt.verify(token, publicKey, options, (err, decoded) => {
+	// 				if (err) return reject(err);
+	// 				else return resolve(decoded);
+	// 			});
+	// 		} else {
+	// 			reject(new APIError("Invalid token type", httpStatus.INTERNAL_SERVER_ERROR, true));
+	// 		}
+	// 	});
+	// }
 
 }
 

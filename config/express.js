@@ -30,18 +30,20 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // The sessionID should never be cached
-app.use((req, res, next) => {
-	res.header('Cache-Control', 'no-cache="Set-Cookie, Set-Cookie2"');
-	next();
-});
+// app.use((req, res, next) => {
+// 	res.header('Cache-Control', 'no-cache="Set-Cookie, Set-Cookie2"');
+// 	next();
+// });
 
-app.use(cookieParser());
-app.use(helmet());
-app.use(helmet.hidePoweredBy());
+// Security Concern
+// app.use(helmet());
+// app.use(helmet.hidePoweredBy());
 app.use(cors);
 // app.use(csurf);
 // app.use(csp);
+
 app.use(methodOverride());
+app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json({ limit: '20mb' }));
 
@@ -56,6 +58,6 @@ const db = require('./db.config');
 app.use('/api', routes);
 
 // Error Handler
-app.use(errorHandler);
+// app.use(errorHandler);
 
 export default app;
