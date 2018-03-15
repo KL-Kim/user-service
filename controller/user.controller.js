@@ -3,6 +3,7 @@ import passport from 'passport';
 import httpStatus from 'http-status';
 import crypto from 'crypto';
 import ms from 'ms';
+import _ from 'lodash';
 
 import BaseController from './base.controller';
 import APIError from '../helper/api-error';
@@ -11,10 +12,12 @@ import MailManager from '../helper/mail.manager';
 import promiseFor from '../helper/promise-for';
 import ac from '../config/rbac.config';
 import User from '../models/user.model';
+import config from '../config/config';
 
 class UserController extends BaseController {
 	constructor() {
 		super();
+
 		this._jwtManager = new JwtManager();
 		this._mailManager = new MailManager();
 	}
@@ -53,6 +56,11 @@ class UserController extends BaseController {
 	getUserById(req, res, next) {
 		UserController.authenticate(req, res, next)
 		.then((user) => {
+			if (req.params.id !== user._id.toString()) {
+				let error = new Error("Permission denied", httpStatus.FORBIDDEN);
+				return next(error);
+			}
+
 			let permission;
 
 			if (user.role === 'admin' || user.role === 'god') {
@@ -90,6 +98,11 @@ class UserController extends BaseController {
 			let username = data.email.substring(0, data.email.lastIndexOf('@'));
 			let newUsername;
 			let count = 1;
+			const lastLogin = {
+				agent: req.useragent.browser,
+				ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+			 	time: Date.now(),
+			};
 
 			promiseFor(
 				(userExist) => {
@@ -99,7 +112,7 @@ class UserController extends BaseController {
 					return new Promise(function(resolve) {
 						User.getByUsername(username).then((user) => {
 							if (user) {
-								username = username + '-' + crypto.randomBytes(2).toString('hex').substring(0,3);
+								username = username + 'X' + crypto.randomBytes(2).toString('hex').substring(0,3);
 								resolve(username);
 							} else {
 								newUsername = username;
@@ -115,8 +128,9 @@ class UserController extends BaseController {
 					username: newUsername,
 					password: data.password,
 					email: data.email,
-					lastLoginIp: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
 				});
+				user.lastLogin.push(lastLogin);
+
 				return user.save();
 			})
 			.then((savedUser) => {
@@ -124,19 +138,23 @@ class UserController extends BaseController {
 				return that._jwtManager.signToken('refresh', savedUser.id);
 			})
 			.then((refreshToken) => {
-				res.cookie('refresh-token', refreshToken, {
+				res.cookie(config.refreshTokenCookieKey, refreshToken, {
 					expires: new Date(Date.now() + ms('60d')),
 					httpOnly: true
 				});
 				return that._jwtManager.signToken('access', req.user.id);
 			}).then((accessToken) => {
+				req.accessToken = accessToken;
 				return that._mailManager.sendEmailVerification(req.user, accessToken);
 			}).then(response => {
 				if (response) {
 					return res.status(201).json({
 						"user": req.user.toJSON(),
-						"token": accessToken,
+						"token": req.accessToken,
 					});
+				} else {
+					const error = new APIError("Sending Email Failed", httpStatus.INTERNAL_SERVER_ERROR);
+					return next(error);
 				}
 			})
 			.catch((error) => {
@@ -146,39 +164,90 @@ class UserController extends BaseController {
 	}
 
 	/**
-	 * Update user
+	 * Update user's profile
 	 * @role admin, regular user ownself
+	 * @param {string} req.params.id - User's id
 	 * @property {string} req.body.firstName - User first name
 	 * @property {string} req.body.lastName - User last name
 	 * @property {string} req.body.gender - User gender
 	 * @property {string} req.body.address - User address
 	 * @property {string} req.body.profilePhotoUri - User last name
-	 * @return {Object<User, token>}
+	 * @return {Object<User>}
 	 */
-	updateUser(req, res, next) {
+	updateUserProfile(req, res, next) {
 		UserController.authenticate(req, res, next)
 		.then((user) => {
-			const permission = (req.params.id === user.id.toString())
-			? ac.can(user.role).readOwn('profile')
-			: ac.can(user.role).readAny('profile');
+			if (req.params.id !== user._id.toString()) {
+				let error = new APIError("Permission denied", httpStatus.FORBIDDEN);
+				return next(error);
+			}
 
-			if (permission.granted) {
-				return user.update({
-					firstName: req.body.firstName || '',
-					lastName: req.body.lastName  || '',
-					gender: req.body.gender || '',
-					address: req.body.address || '',
-					profilePhotoUrl: req.body.address || '',
-				}, { runValidators: true }).exec();
+			let newUserInfo = {};
+
+			const regularPermission = ac.can(user.role).updateOwn('profile');
+			const adminPermission = ac.can(user.role).updateAny('profile');
+
+			if (adminPermission.granted) {
+				newUserInfo = adminPermission.filter(req.body)
+			} else if (regularPermission.granted) {
+				newUserInfo = regularPermission.filter(req.body);
 			} else {
 				return next(new APIError("Permission denied", httpStatus.FORBIDDEN));
 			}
+
+			return user.update({...newUserInfo}, { runValidators: true }).exec();
+		})
+		.then((result) => {
+			if (result.ok) {
+				return result;
+			} else {
+				throw new APIError("Update failed", httpStatus.INTERNAL_SERVER_ERROR);
+			}
+		})
+		.then(result => {
+			return User.getById(req.params.id);
+		})
+		.then(user => {
+			return res.json(user);
+		}).catch((err) => {
+			return next(err);
+		});
+	}
+
+	/**
+	 * Update user's username
+	 * @role admin, regular user ownself
+	 * @param {string} req.params.id - User's id
+	 * @property {string} req.body.username - User's username
+	 * @return {Object<User>}
+	 */
+	updateUsername(req, res, next) {
+		UserController.authenticate(req, res, next)
+		.then((user) => {
+			if (req.params.id !== user._id.toString()) {
+				let error = new APIError("Permission denied", httpStatus.FORBIDDEN);
+				return next(error);
+			}
+
+			return User.getByUsername(req.body.username).then(newUser => {
+				if (newUser) {
+					const error = new APIError("The username already exists", httpStatus.CONFLICT);
+					return next(error);
+				}
+				return user.update({"username": req.body.username}, { runValidators: true }).exec();
+			});
 		}).then((result) => {
 			if (result.ok)
-				return res.status(204).json(result);
-			else return next(new APIError("Update failed", httpStatus.INTERNAL_SERVER_ERROR));
-		})
-		.catch((err) => {
+				return result;
+			else {
+				const error = new APIError("Update failed", httpStatus.INTERNAL_SERVER_ERROR);
+				return next(error);
+			}
+		}).then(result => {
+			return User.getById(req.params.id);
+		}).then(user => {
+			return res.json(user);
+		}).catch((err) => {
 			return next(err);
 		});
 	}
@@ -194,8 +263,45 @@ class UserController extends BaseController {
 			User.findOne({ "email": email }, (err, user) => {
 				if (err) return next(err);
 
+				if (_.isEmpty(user)) {
+					return next(new APIError("Not found", httpStatus.BAD_REQUEST));
+				}
+
 				this._jwtManager.signToken('access', user.id).then(accessToken => {
 					return this._mailManager.sendChangePassword(user, accessToken);
+				}).then(response => {
+					if (response) {
+						return res.status(204).json();
+					}
+				})
+				.catch(err => {
+					return next(err);
+				});
+
+			});
+		} else {
+			const error = new APIError("Email missing", httpStatus.BAD_REQUEST);
+			return next(error);
+		}
+	}
+
+	/**
+	 * Send account verification email
+	 * @property {string} req.body.email - User email
+	 */
+	sendAccountVerificationEmail(req, res, next) {
+		const email = req.body.email;
+
+		if (email) {
+			User.findOne({ "email": email }, (err, user) => {
+				if (err) return next(err);
+
+				if (_.isEmpty(user)) {
+					return next(new APIError("Not found", httpStatus.BAD_REQUEST));
+				}
+
+				this._jwtManager.signToken('access', user.id).then(accessToken => {
+					return this._mailManager.sendEmailVerification(user, accessToken);
 				}).then(response => {
 					if (response) {
 						return res.status(204).json();

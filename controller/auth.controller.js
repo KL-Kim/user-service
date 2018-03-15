@@ -24,27 +24,36 @@ class AuthController extends BaseController {
 			if (err) return next(err);
 			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
-			user.update({ lastLoginAt: Date.now() }, { lastLoginIp: req.headers['x-forwarded-for'] || req.connection.remoteAddress })
-				.exec().then((result) => {
-					that._jwtManager.signToken('refresh', user.id)
-						.then((refreshToken) => {
-							res.cookie('refresh-token', refreshToken, {
-								"maxAge": ms(config.refreshTokenOptions.expiresIn),
-								"httpOnly": true,
-							});
+			const lastLogin = {
+				agent: req.useragent.browser,
+				ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+			 	time: Date.now(),
+			};
 
-							return user.id;
-						}).then((uid) => {
-							return that._jwtManager.signToken('access', uid);
-						}).then((accessToken) => {
-							return res.json({
-								"user": user,
-								"token": accessToken
-							});
-						}).catch((err) => {
-							return next(err);
+			user.lastLogin.push(lastLogin);
+
+			user.save((err, result) => {
+				if (err) return next(err);
+
+				that._jwtManager.signToken('refresh', user.id)
+					.then((refreshToken) => {
+						res.cookie(config.refreshTokenCookieKey, refreshToken, {
+							"maxAge": ms(config.refreshTokenOptions.expiresIn),
+							"httpOnly": true,
 						});
-				});
+
+						return user.id;
+					}).then((uid) => {
+						return that._jwtManager.signToken('access', uid);
+					}).then((accessToken) => {
+						return res.json({
+							"user": user,
+							"token": accessToken
+						});
+					}).catch((err) => {
+						return next(err);
+					});
+			});
 		})(req, res, next);
 	}
 
@@ -75,7 +84,7 @@ class AuthController extends BaseController {
 	 */
 	logout(req, res, next) {
 		const that = this;
-		passport.authenticate('access-token', function(err, result, info) {
+		passport.authenticate('refresh-token', { session: false }, (err, result, info) => {
 			if (err) return next(err);
 			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
 

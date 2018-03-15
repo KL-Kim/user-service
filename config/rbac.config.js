@@ -9,13 +9,14 @@ import { AccessControl } from 'accesscontrol';
 const grants = {
 	guest: {
 		user: {
-			"create:own": ["*"]
-		}
+			"create:own": ["email", "password"],
+		},
 	},
 	regular: {
 		profile: {
-			"read:own": ["*", "!id", "!password"],
-			"update:own": ["*", "!role"],
+			"read:own": ["*", "!password", "!lastLoginAt"],
+			//"update:own": ["*", "!role", "!point", "!userStatus", "!isVerified", "!createdAt", "!lastLogin"],
+			"update:own": ["firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
 		},
 		reviews: {
 			"read:any": ["*"],
@@ -26,8 +27,9 @@ const grants = {
 	},
 	manager: {
 		profile: {
-			"read:own": ["*", "!password"],
-			"update:own": ["*"],
+			"read:own": ["*", "!password", "!lastLoginAt"],
+			//"update:own": ["*", "!role", "!point", "!userStatus", "!isVerified", "!createdAt", "!lastLogin"],
+			"update:own": ["firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
 		},
 		business: {
 			"read:any": ["*"],
@@ -39,8 +41,9 @@ const grants = {
 	admin: {
 		profile: {
 			"read:any": ["*", "!password"],
-			"create:any": ["*"],
-			"update:any": ["*"],
+			"create:any": ["firstName", "lastName", "gender", "birthday", "address", "interestedIn", "userStatus", "role"],
+			// "update:any": ["*",  "!point", "!createdAt", "!lastLogin"],
+			"update:own": ["firstName", "lastName", "gender", "birthday", "address", "interestedIn", "userStatus", "role"],
 		},
 		business: {
 			"read:any": ["*"],
@@ -58,8 +61,8 @@ const grants = {
 	god: {
 		profile: {
 			"read:any": ["*", "!password"],
-			"create:any": ["*"],
-			"update:any": ["*"],
+			"create:any": ["*", "!point", "!lastLoginAt", "!createdAt", "!lastLogin"],
+			"update:any": ["*", "!point", "!lastLoginAt", "!createdAt", "!lastLogin"],
 			"delete:any": ["*"]
 		},
 		business: {

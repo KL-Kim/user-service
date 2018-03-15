@@ -16,13 +16,19 @@ router.get('/', validate(paramValidation.getUsersList), userController.getUsersL
 /** GET /api/v1/user/:id - Get user data **/
 router.get('/:id', validate(paramValidation.getUserById), userController.getUserById);
 
-/** PUT /api/v1/user/:id - Edit user info **/
-router.put('/:id', validate(paramValidation.updateUser), userController.updateUser);
+/** PUT /api/v1/user/:id - Edit user profile info **/
+router.put('/:id', validate(paramValidation.updateUser), userController.updateUserProfile);
 
-/** POST /api/v1/user/mail/password - Change password **/
-router.post('/mail/password', validate(paramValidation.checkEmail), userController.sendChangePasswordEmail);
+/** PUT /api/v1/user/username/:id - Edit user profile info **/
+router.put('/useranme/:id', validate(paramValidation.updateUsername), userController.updateUsername);
 
-/** post /api/v1/auth/password - Account Verification **/
+/** POST /api/v1/user/mail/verify - Send account verification email **/
+router.post('/mail/verify', validate(paramValidation.sendEmail), userController.sendAccountVerificationEmail);
+
+/** POST /api/v1/user/mail/password - Send changing password email **/
+router.post('/mail/password', validate(paramValidation.sendEmail), userController.sendChangePasswordEmail);
+
+/** post /api/v1/auth/password - Change password **/
 router.post('/password', validate(paramValidation.changePassword), userController.changePassword);
 
 export default router;

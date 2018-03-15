@@ -79,7 +79,7 @@ class MailManager extends BaseAutobind {
           }
 
           if (info) {
-            return resolve(info.reponse);
+            return resolve(info.response);
           }
 
           // console.log('Message sent: %s', info.messageId);

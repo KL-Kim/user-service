@@ -81,7 +81,7 @@ class jwtManager extends BaseAutoBindedClass {
 				if (err) return reject(err);
 
 				if (result) {
-					reject(new APIError("Token already revoked", httpStatus.INTERNAL_SERVER_ERROR));
+					reject(new APIError("Token already revoked", httpStatus.BAD_REQUEST));
 				} else {
 					let revokedToken = new RevokedToken({
 						id: tid

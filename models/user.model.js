@@ -15,6 +15,8 @@ const UserSchema = new mongoose.Schema({
 	username: {
 		type: String,
 		required: true,
+		minLength: [4, 'The value of path `{PATH}` (`{VALUE}`) is shorter than the minimum allowed length ({MINLENGTH}).'],
+		maxLength: [30, 'The value of path `{PATH}` (`{VALUE}`) is longer than the maximum allowed length ({MINLENGTH}).'],
 		index: {
 			unique: true
 		}
@@ -50,35 +52,88 @@ const UserSchema = new mongoose.Schema({
 	},
 	gender: {
 		type: String,
-		enum: ['male', 'female']
+		enum: ['Male', 'Female', 'Other']
+	},
+	birthday: {
+		type: Date,
 	},
 	address: {
-		type: String
-	},
-	point: {
-		type: Number,
-		default: 0
-	},
-	userStatus: {
-		type: String,
-		enum: ['normal', 'suspened'],
-		default: 'normal'
+		province: {
+			name: {
+				type: String
+			},
+			code: {
+				type: Number
+			}
+		},
+		city: {
+			name: {
+				type: String
+			},
+			code: {
+				type: Number
+			}
+		},
+		area: {
+			name: {
+				type: String
+			},
+			code: {
+				type: Number
+			}
+		},
+		street: {
+			type: String,
+		},
 	},
 	isVerified: {
 		type: Boolean,
 		default: false
 	},
+	userStatus: {
+		type: String,
+		enum: ['normal', 'suspended'],
+		default: 'normal'
+	},
+	point: {
+		type: Number,
+		default: 0
+	},
+	following: [{
+		id: {
+			type: String,
+		},
+		username: {
+			type: String
+		}
+	}],
+	followers: [{
+		id: {
+			type: String,
+		},
+		username: {
+			type: String
+		}
+	}],
+	interestedIn:[{
+		type: String,
+	}],
 	profilePhotoUri: {
 		type: String,
 		default: ''
 	},
-	lastLoginIp: {
-		type: String
-	},
-	lastLoginAt: {
-		type: Date,
-		default: Date.now
-	},
+	lastLogin: [{
+		agent: {
+			type: String
+		},
+		ip: {
+			type: String
+		},
+		time: {
+			type: Date,
+			default: Date.now
+		},
+	}],
 	createdAt: {
 		type: Date,
 		default: Date.now
@@ -95,7 +150,11 @@ UserSchema.virtual('id')
  * Pre-save hooks
  */
 UserSchema.pre('save', function(next) {
-	let user = this
+	let user = this;
+
+	// if (user.lastLogin.length > 2) {
+	// 	user.lastLogin.shift();
+	// }
 
 	if (!user.isModified('password')) {
 		return next();
@@ -112,6 +171,8 @@ UserSchema.pre('save', function(next) {
 UserSchema.pre('update', function(next) {
 	let query = this;
 	let update = query.getUpdate();
+
+	// console.log(update);
 
 	if (!update.password) {
 		return next();
@@ -144,10 +205,16 @@ UserSchema.methods = {
 		});
 	},
 
+	/**
+	 * Remove unnecessary info
+	 */
 	toJSON() {
 		let obj = this.toObject();
 		delete obj.password;
 		delete obj.__v;
+		delete obj.lastLogin;
+		delete obj.createdAt;
+		obj.birthday = obj.birthday ? obj.birthday.toLocaleDateString() : '';
 		return obj;
 	},
 };
@@ -156,25 +223,27 @@ UserSchema.methods = {
  * Statics
  */
 UserSchema.statics = {
-	// Get user by Id
+	/**
+	 * Get user by id
+	 * @param {string} id - User's Id
+	 * @returns {<User>, false}
+	 */
 	getById(id) {
 		return this.findById(id).exec();
 	},
 
-	// Get user by name
+	/**
+	 * Get user by email
+	 * @param {string} email - User's eamil
+	 * @returns {<User>, false}
+	 */
 	getByEmail(email) {
 		return this.findOne({ email: email }).exec();
 	},
 
-	// Get user by username
-	getByUsername(username) {
-		return this.findOne({ username: username }).exec();
-	},
-
-	// Get user by username
 	/**
 	 * Get user by username
-	 * @param {string} username - User's usernameField
+	 * @param {string} username - User's username
 	 * @returns {<User>, false}
 	 */
 	getByUsername(username) {

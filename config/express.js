@@ -4,6 +4,7 @@ import compression from 'compression';
 import bodyParser from 'body-parser';
 import methodOverride from 'method-override';
 import cookieParser from 'cookie-parser';
+import userAgent from 'express-useragent';
 
 // Security concern
 import helmet from 'helmet';
@@ -46,6 +47,7 @@ app.use(methodOverride());
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json({ limit: '20mb' }));
+app.use(userAgent.express());
 
 
 // Passport Initialization

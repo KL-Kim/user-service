@@ -20,7 +20,7 @@ function setConfig() {
 			.allow('development', 'production', 'test')
 			.default('development'),
 		SERVER_PORT: Joi.number()
-			.default(3000),
+			.default(3001),
 		MONGO_HOST: Joi.string().default('localhost'),
 		MONGO_PORTS: Joi.number().default(27017),
 		WEB_SERVICE_HOST: Joi.string().required(),
@@ -29,18 +29,20 @@ function setConfig() {
 		REFRESH_JWT_EXPIRATION: Joi.string().default(ms('60d')),
 		REFRESH_JWT_ISSUER: Joi.string().allow(''),
 		REFRESH_JWT_AUDIENCE: Joi.string().allow(''),
+		REFRESH_JWT_KEY: Joi.string().default('id'),
 		ACCESS_JWT_ALGORITHM: Joi.string().default('RS256'),
 		ACCESS_JWT_ISSUER: Joi.string().allow(''),
 		ACCESS_JWT_AUDIENCE: Joi.string().allow(''),
 		ACCESS_JWT_EXPIRATION: Joi.string().default(ms('1h')),
 		// SESSION_SECRET: Joi.string().required(),
-	}).unknown();
+	}).unknown(true);
 
 	const {error, value: envVars} = Joi.validate(process.env, envVarsSchema);
 
 	if (error) {
 		throw new Error(`Config Validation Error: ${error.message}`);
 	}
+	
 	const config = {
 		env: envVars.NODE_ENV,
 		port: envVars.SERVER_PORT,
@@ -55,6 +57,7 @@ function setConfig() {
 			changePasswordUrl: envVars.WEB_SERVICE_HOST + ':' + envVars.WEB_SERVICE_PORT + '/change-password/',
 		},
 		// sessionSecret: envVars.SESSION_SECRET,
+		refreshTokenCookieKey: envVars.REFRESH_JWT_COOKIE_KEY,
 		refreshTokenOptions: {
 			algorithm: envVars.REFRESH_JWT_ALGORITHM,
 			expiresIn: envVars.REFRESH_JWT_EXPIRATION,
