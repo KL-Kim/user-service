@@ -6,8 +6,9 @@
 import Joi from 'joi';
 
 export default {
+	
 	/** POST /api/v1/user/signup **/
-	"createUser": {
+	"register": {
 		"body": {
 			email: Joi.string().email().required(),
 			password: Joi.string().min(8).strip().required(),
@@ -63,8 +64,6 @@ export default {
 				street: Joi.string().trim(),
 			},
 			birthday: Joi.date(),
-			role: Joi.string().valid(['regular', 'manager', 'admin']),
-			userStatus: Joi.string().valid(['normal', 'suspended']),
 		}
 	},
 
@@ -78,18 +77,47 @@ export default {
 		}
 	},
 
-	/** POST /api/v1/user/mail/password **/
-	"sendEmail": {
+	/** POST /api/v1/user/phone/:id **/
+	"updateUserPhone": {
+		"params": {
+			id: Joi.string().hex().required(),
+		},
 		"body": {
+			phoneNumber: Joi.string().trim().length(11).required(),
+			code: Joi.string().trim().length(6).required()
+		},
+	},
+
+	/** GET /api/v1/auth/mail/* **/
+	"sendEmail": {
+		"params": {
 			email: Joi.string().email().required(),
 		}
 	},
 
-	/** POST /api/v1/auth/password **/
+	/** GET /api/v1/user/phoneVerificationCode/* **/
+	"sendVerificationCode": {
+		"params": {
+			phoneNumber: Joi.string().alphanum().length(11).required(),
+		}
+	},
+
+	/** POST /api/v1/user/password **/
 	"changePassword": {
 		"body": {
 			password: Joi.string().min(8).strip().required(),
 			passwordConfirmation: Joi.any().valid(Joi.ref('password')).options({ language: { any: { allowOnly: 'Passwords do not match' } } }).required(),
 		}
 	},
+
+	/** POST /api/v1/user/admin/:id **/
+	"adminEditUser": {
+		"params": {
+			id: Joi.string().hex().required(),
+		},
+		"body": {
+			role: Joi.string().valid(['regular', 'manager', 'admin']),
+			userStatus: Joi.string().valid(['normal', 'suspended']),
+		},
+	}
 };

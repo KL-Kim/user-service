@@ -14,7 +14,7 @@ const RevokedTokenSchema = new mongoose.Schema({
 	createdAt: {
 		type: Date,
 		default: Date.now,
-		expires: '2d'
+		expires: '60d'
 	}
 });
 

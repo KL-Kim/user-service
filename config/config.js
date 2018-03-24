@@ -8,6 +8,7 @@ import fs from 'fs';
 import Joi from 'joi';
 import ms from 'ms';
 import mailAccount from './secret/mail-account';
+import SMSAccessKey from './secret/SMSAccessKey';
 require('dotenv').config();
 
 function setConfig() {
@@ -71,6 +72,7 @@ function setConfig() {
 			//audience: envVars.ACCESS_JWT_AUDIENCE,
 		},
 		mailAccount: mailAccount,
+		SMSAccessKey: SMSAccessKey,
 	};
 
 	try {

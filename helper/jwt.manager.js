@@ -46,12 +46,14 @@ class jwtManager extends BaseAutoBindedClass {
 			let privateKey;
 			let options;
 
-			if (type === 'refresh') {
+			if (type === 'REFRESH') {
 				privateKey = that._refreshTokenPrivateKey;
 				options = that._refreshTokenOptions;
-			} else if (type === 'access'){
+			} else if (type === 'ACCESS'){
 				privateKey = that._accessTokenPrivateKey;
 				options = that._accessTokenOptions;
+			} else {
+				reject(new APIError("Invalid token type", httpStatus.INTERNAL_SERVER_ERROR, true));
 			}
 
 			if (privateKey && options) {
@@ -64,8 +66,6 @@ class jwtManager extends BaseAutoBindedClass {
 						reject(new APIError("Sign new token faild", httpStatus.INTERNAL_SERVER_ERROR, true));
 					}
 				});
-			} else {
-				reject(new APIError("Invalid token type", httpStatus.INTERNAL_SERVER_ERROR, true));
 			}
 		});
 	}

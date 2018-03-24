@@ -16,7 +16,16 @@ router.get('/logout', authController.logout);
 /** GET /api/v1/auth/token - Issue access token **/
 router.get('/token', authController.issueAccessToken);
 
-/** GET /api/v1/auth/verify - Account Verification **/
-router.get('/verify', authController.accountVerification);
+/** GET /api/v1/auth/phoneVerificationCode/:phoneNumber - Send Verification Code **/
+router.get('/phoneVerificationCode/:phoneNumber', 
+	validate(paramValidation.sendVerificationCode), 
+	authController.sendPhoneVerificationCode
+);
+
+/** GET /api/v1/auth/mail/verify/:email - Send account verification email **/
+router.get('/mail/verify/:email', validate(paramValidation.sendEmail), authController.sendAccountVerificationEmail);
+
+/** GET /api/v1/auth/mail/password/:email - Send changing password email **/
+router.get('/mail/password/:email', validate(paramValidation.sendEmail), authController.sendChangePasswordEmail);
 
 export default router;

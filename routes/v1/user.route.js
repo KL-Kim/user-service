@@ -1,5 +1,6 @@
 import Express from 'express';
 import validate from 'express-validation';
+import multer from 'multer';
 
 import UserController from '../../controller/user.controller';
 import paramValidation from '../../config/param-validation';
@@ -7,8 +8,31 @@ import paramValidation from '../../config/param-validation';
 const router = Express.Router();
 const userController = new UserController();
 
+const storage = multer.diskStorage({
+  "destination": (req, file, cb) => {
+    cb(null, './avatars/');
+  },
+  "filename": (req, file, cb) => {
+    cb(null, file.originalname + '.avatar.jpeg');
+  }
+});
+
+const upload = multer({
+  "storage": storage,
+  "fileFilter": (req, file, cb) => {
+    if (file.mimetype === 'image/jpeg') {
+      cb(null, true);
+    } else {
+      cb(new Error("Avatar - Not supported format"));
+    }
+  }
+});
+
 /** POST /api/v1/user/register - Create new user **/
-router.post('/register', validate(paramValidation.createUser), userController.createNewUser);
+router.post('/register', validate(paramValidation.register), userController.registerNewUser);
+
+/** GET /api/v1/user/verify - Account Verification **/
+router.get('/verify', userController.accountVerification);
 
 /** GET /api/v1/user - Get list of users **/
 router.get('/', validate(paramValidation.getUsersList), userController.getUsersList);
@@ -22,13 +46,16 @@ router.put('/:id', validate(paramValidation.updateUser), userController.updateUs
 /** PUT /api/v1/user/username/:id - Edit user profile info **/
 router.put('/useranme/:id', validate(paramValidation.updateUsername), userController.updateUsername);
 
-/** POST /api/v1/user/mail/verify - Send account verification email **/
-router.post('/mail/verify', validate(paramValidation.sendEmail), userController.sendAccountVerificationEmail);
+/** PUT /api/v1/user/phone/:id - Update user telephone **/
+router.post('/phone/:id', validate(paramValidation.updateUserPhone), userController.updateUserPhone);
 
-/** POST /api/v1/user/mail/password - Send changing password email **/
-router.post('/mail/password', validate(paramValidation.sendEmail), userController.sendChangePasswordEmail);
+/** POST /api/v1/user/photo/:id - Update user profile photo **/
+router.post('/profilePhoto/:id', upload.single('avatar'), userController.uploadProfilePhoto);
 
-/** post /api/v1/auth/password - Change password **/
+/** POST /api/v1/user/password - Change password **/
 router.post('/password', validate(paramValidation.changePassword), userController.changePassword);
+
+/** POST /api/v1/user/admin/:id - Admin edit user data **/
+router.post('/admin/:id', validate(paramValidation.adminEditUser), userController.adminEditUser);
 
 export default router;

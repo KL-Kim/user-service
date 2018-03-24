@@ -13,9 +13,8 @@ const grants = {
 		},
 	},
 	regular: {
-		profile: {
-			"read:own": ["*", "!password", "!lastLoginAt"],
-			//"update:own": ["*", "!role", "!point", "!userStatus", "!isVerified", "!createdAt", "!lastLogin"],
+		account: {
+			"read:own": ["*", "!password", "!role", "!createdAt", "!userStatus", "!lastLogin", "!point"],
 			"update:own": ["firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
 		},
 		reviews: {
@@ -26,8 +25,8 @@ const grants = {
 		}
 	},
 	manager: {
-		profile: {
-			"read:own": ["*", "!password", "!lastLoginAt"],
+		account: {
+			"read:own": ["*", "!password", "!role", "!createdAt", "!userStatus"],
 			//"update:own": ["*", "!role", "!point", "!userStatus", "!isVerified", "!createdAt", "!lastLogin"],
 			"update:own": ["firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
 		},
@@ -39,11 +38,10 @@ const grants = {
 		},
 	},
 	admin: {
-		profile: {
+		account: {
 			"read:any": ["*", "!password"],
-			"create:any": ["firstName", "lastName", "gender", "birthday", "address", "interestedIn", "userStatus", "role"],
-			// "update:any": ["*",  "!point", "!createdAt", "!lastLogin"],
-			"update:own": ["firstName", "lastName", "gender", "birthday", "address", "interestedIn", "userStatus", "role"],
+			"update:any": ["role", "userStatus"],
+			"update:own": ["firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
 		},
 		business: {
 			"read:any": ["*"],
@@ -56,13 +54,13 @@ const grants = {
 			"create:any": ["*"],
 			"update:any": ["*"],
 			"delete:any": ["*"]
-		}
+		},
 	},
 	god: {
-		profile: {
+		account: {
 			"read:any": ["*", "!password"],
-			"create:any": ["*", "!point", "!lastLoginAt", "!createdAt", "!lastLogin"],
-			"update:any": ["*", "!point", "!lastLoginAt", "!createdAt", "!lastLogin"],
+			"create:any": ["*", "!lastLogin"],
+			"update:any": ["*", "!createdAt", "!lastLogin"],
 			"delete:any": ["*"]
 		},
 		business: {

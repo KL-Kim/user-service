@@ -9,10 +9,10 @@ User.remove({}, function(err) {
 });
 
 let god = new User({
-	username: 'kim911',
+	username: 'adminKim911',
 	email: 'jinguanglong11@icloud.com',
 	password: '1234567890',
-	role: 'god',
+	role: 'admin',
 });
 
 god.save();

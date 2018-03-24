@@ -30,14 +30,8 @@ const UserSchema = new mongoose.Schema({
 			unique: true
 		}
 	},
-	mobileNumber: {
+	phoneNumber: {
 		type: String,
-	},
-	role: {
-		type: String,
-		required: true,
-		default: 'regular',
-		enum: ['god', 'admin', 'manager', 'regular']
 	},
 	password: {
 		type: String,
@@ -90,11 +84,6 @@ const UserSchema = new mongoose.Schema({
 		type: Boolean,
 		default: false
 	},
-	userStatus: {
-		type: String,
-		enum: ['normal', 'suspended'],
-		default: 'normal'
-	},
 	point: {
 		type: Number,
 		default: 0
@@ -134,6 +123,17 @@ const UserSchema = new mongoose.Schema({
 			default: Date.now
 		},
 	}],
+	role: {
+		type: String,
+		required: true,
+		default: 'regular',
+		enum: ['god', 'admin', 'manager', 'regular']
+	},
+	userStatus: {
+		type: String,
+		enum: ['normal', 'suspended'],
+		default: 'normal'
+	},
 	createdAt: {
 		type: Date,
 		default: Date.now
@@ -152,9 +152,9 @@ UserSchema.virtual('id')
 UserSchema.pre('save', function(next) {
 	let user = this;
 
-	// if (user.lastLogin.length > 2) {
-	// 	user.lastLogin.shift();
-	// }
+	while(user.lastLogin.length > 20) {
+		user.lastLogin.shift();
+	}
 
 	if (!user.isModified('password')) {
 		return next();
@@ -212,8 +212,7 @@ UserSchema.methods = {
 		let obj = this.toObject();
 		delete obj.password;
 		delete obj.__v;
-		delete obj.lastLogin;
-		delete obj.createdAt;
+		obj.createdAt = obj.createdAt.toLocaleDateString();
 		obj.birthday = obj.birthday ? obj.birthday.toLocaleDateString() : '';
 		return obj;
 	},
@@ -223,10 +222,11 @@ UserSchema.methods = {
  * Statics
  */
 UserSchema.statics = {
+
 	/**
 	 * Get user by id
 	 * @param {string} id - User's Id
-	 * @returns {<User>, false}
+	 * @returns {Promise<User>}
 	 */
 	getById(id) {
 		return this.findById(id).exec();
@@ -235,7 +235,7 @@ UserSchema.statics = {
 	/**
 	 * Get user by email
 	 * @param {string} email - User's eamil
-	 * @returns {<User>, false}
+	 * @returns {Promise<User>}
 	 */
 	getByEmail(email) {
 		return this.findOne({ email: email }).exec();
@@ -244,7 +244,7 @@ UserSchema.statics = {
 	/**
 	 * Get user by username
 	 * @param {string} username - User's username
-	 * @returns {<User>, false}
+	 * @returns {Promise<User>}
 	 */
 	getByUsername(username) {
 		return this.findOne({ 'username': username }).exec();

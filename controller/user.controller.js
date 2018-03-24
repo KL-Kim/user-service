@@ -4,6 +4,7 @@ import httpStatus from 'http-status';
 import crypto from 'crypto';
 import ms from 'ms';
 import _ from 'lodash';
+import validator from 'validator';
 
 import BaseController from './base.controller';
 import APIError from '../helper/api-error';
@@ -12,6 +13,7 @@ import MailManager from '../helper/mail.manager';
 import promiseFor from '../helper/promise-for';
 import ac from '../config/rbac.config';
 import User from '../models/user.model';
+import VerificationCode from '../models/code.model';
 import config from '../config/config';
 
 class UserController extends BaseController {
@@ -23,31 +25,6 @@ class UserController extends BaseController {
 	}
 
 	/**
-	 * Get users list
-	 * @role admin
-	 * @property {number} req.query.skip - Number of users to be skipped.
-	 * @property {number} req.query.limit - Limit number of users to be returned.
-	 * @returns {User[]}
-	 */
-	getUsersList(req, res, next) {
-		const { limit = 50, skip = 0 } = req.query;
-		UserController.authenticate(req, res, next)
-		.then((user) => {
-			const permission = ac.can(user.role).readAny('profile');
-
-			if (permission.granted) {
-				return User.getUsersList({ limit, skip });
-			} else {
-				return next(new APIError("Permission denied", httpStatus.FORBIDDEN));
-			}
-		})
-		.then(users => res.json(users))
-		.catch((err) => {
-			return next(err);
-		});
-	}
-
-	/**
 	 * Get user by id
 	 * @role admin, regular user ownself
 	 * @property {OjectId} req.params.id - user's id in url path
@@ -55,38 +32,50 @@ class UserController extends BaseController {
 	 */
 	getUserById(req, res, next) {
 		UserController.authenticate(req, res, next)
-		.then((user) => {
-			if (req.params.id !== user._id.toString()) {
-				let error = new Error("Permission denied", httpStatus.FORBIDDEN);
-				return next(error);
-			}
+			.then((user) => {
+				if (req.params.id !== user._id.toString()) {
+					throw new Error("Permission denied", httpStatus.FORBIDDEN);
+				}
 
-			let permission;
+				const lastLogin = {
+					agent: req.useragent.browser,
+					ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+				 	time: Date.now(),
+				};
 
-			if (user.role === 'admin' || user.role === 'god') {
-				permission = ac.can(user.role).readAny('profile');
-			} else if (req.params.id === user.id.toString()) {
-				permission = ac.can(user.role).readOwn('profile');
-			}
+				let permission;
 
-			if (permission.granted) {
-				return res.status(200).json(user);
-			} else {
-				return next(new APIError("Permission denied", httpStatus.FORBIDDEN));
-			}
-		}).catch((err) => {
-			return next(err);
-		});
+				if (user.role === 'admin' || user.role === 'god') {
+					permission = ac.can(user.role).readAny('account');
+				} else {
+					permission = ac.can(user.role).readOwn('account');
+				}
+
+				if (permission.granted) {
+					user.lastLogin.push(lastLogin);
+
+					user.save((err, savedUser) => {
+						const result = permission.filter(savedUser.toJSON());
+						result._id = savedUser.id.toString();
+						return res.status(200).json(result);
+					})
+
+				} else {
+					throw new APIError("Permission denied", httpStatus.FORBIDDEN);
+				}
+			}).catch((err) => {
+				return next(err);
+			});
 	}
 
 	/**
-	 * Create user
-	 * @role admin, regular user ownself
+	 * Create new user
+	 * @role *
 	 * @property {string} req.body.password - user password
 	 * @property {string} req.body.passwordConfirmation - user password confirmation
 	 * @return {Object<User, token>}
 	 */
-	createNewUser(req, res, next) {
+	registerNewUser(req, res, next) {
 		if (req.body.password !== req.body.passwordConfirmation)
 			return done(new APIError("Passwords do not match", httpStatus.BAD_REQUEST));
 
@@ -97,7 +86,7 @@ class UserController extends BaseController {
 			let data = req.body;
 			let username = data.email.substring(0, data.email.lastIndexOf('@'));
 			let newUsername;
-			let count = 1;
+
 			const lastLogin = {
 				agent: req.useragent.browser,
 				ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
@@ -135,26 +124,25 @@ class UserController extends BaseController {
 			})
 			.then((savedUser) => {
 				req.user = savedUser;
-				return that._jwtManager.signToken('refresh', savedUser.id);
+				return that._jwtManager.signToken('REFRESH', savedUser.id);
 			})
 			.then((refreshToken) => {
 				res.cookie(config.refreshTokenCookieKey, refreshToken, {
 					expires: new Date(Date.now() + ms('60d')),
 					httpOnly: true
 				});
-				return that._jwtManager.signToken('access', req.user.id);
+				return that._jwtManager.signToken('ACCESS', req.user.id);
 			}).then((accessToken) => {
 				req.accessToken = accessToken;
 				return that._mailManager.sendEmailVerification(req.user, accessToken);
 			}).then(response => {
 				if (response) {
 					return res.status(201).json({
-						"user": req.user.toJSON(),
+						"user": UserController.getFilteredUser(req.user),
 						"token": req.accessToken,
 					});
 				} else {
-					const error = new APIError("Sending Email Failed", httpStatus.INTERNAL_SERVER_ERROR);
-					return next(error);
+					throw new APIError("Sending Email Failed", httpStatus.INTERNAL_SERVER_ERROR);
 				}
 			})
 			.catch((error) => {
@@ -164,186 +152,270 @@ class UserController extends BaseController {
 	}
 
 	/**
+	 * Verify account
+	 * @role *
+	 * @returns {none}
+	 */
+	accountVerification(req, res, next) {
+		// Check jwt token, and account is verified if sign is true.
+		UserController.authenticate(req, res, next)
+			.then((user) => {
+				if (user.isVerified) {
+					return user;
+				} else {
+					user.isVerified = true;
+					return user.save();
+				}
+			}).then(user => {
+	 			return res.json(UserController.getFilteredUser(user));
+	 		}).catch(err => {
+	 			return next(err);
+	 		});
+	}
+
+	/**
 	 * Update user's profile
-	 * @role admin, regular user ownself
+	 * @role *
 	 * @param {string} req.params.id - User's id
 	 * @property {string} req.body.firstName - User first name
 	 * @property {string} req.body.lastName - User last name
 	 * @property {string} req.body.gender - User gender
 	 * @property {string} req.body.address - User address
-	 * @property {string} req.body.profilePhotoUri - User last name
+	 * @property {string} req.body.birthday - User birthday
 	 * @return {Object<User>}
 	 */
 	updateUserProfile(req, res, next) {
 		UserController.authenticate(req, res, next)
-		.then((user) => {
-			if (req.params.id !== user._id.toString()) {
-				let error = new APIError("Permission denied", httpStatus.FORBIDDEN);
-				return next(error);
-			}
+			.then((user) => {
+				if (req.params.id !== user._id.toString()) {
+					let error = new APIError("Permission denied", httpStatus.FORBIDDEN);
+					return next(error);
+				}
 
-			let newUserInfo = {};
+				let	permission = ac.can(user.role).updateOwn('account');
+				let newUserInfo = permission.filter(req.body);
 
-			const regularPermission = ac.can(user.role).updateOwn('profile');
-			const adminPermission = ac.can(user.role).updateAny('profile');
-
-			if (adminPermission.granted) {
-				newUserInfo = adminPermission.filter(req.body)
-			} else if (regularPermission.granted) {
-				newUserInfo = regularPermission.filter(req.body);
-			} else {
-				return next(new APIError("Permission denied", httpStatus.FORBIDDEN));
-			}
-
-			return user.update({...newUserInfo}, { runValidators: true }).exec();
-		})
-		.then((result) => {
-			if (result.ok) {
-				return result;
-			} else {
-				throw new APIError("Update failed", httpStatus.INTERNAL_SERVER_ERROR);
-			}
-		})
-		.then(result => {
-			return User.getById(req.params.id);
-		})
-		.then(user => {
-			return res.json(user);
-		}).catch((err) => {
-			return next(err);
-		});
+				return user.update({...newUserInfo}, { runValidators: true }).exec();
+			})
+			.then((result) => {
+				if (result.ok) {
+					return result;
+				} else {
+					throw new APIError("Update user failed", httpStatus.INTERNAL_SERVER_ERROR);
+				}
+			})
+			.then(result => {
+				return User.getById(req.params.id);
+			})
+			.then(user => {
+				return res.json(UserController.getFilteredUser(user));
+			}).catch((err) => {
+				return next(err);
+			});
 	}
 
 	/**
 	 * Update user's username
-	 * @role admin, regular user ownself
+	 * @role *
 	 * @param {string} req.params.id - User's id
 	 * @property {string} req.body.username - User's username
 	 * @return {Object<User>}
 	 */
 	updateUsername(req, res, next) {
 		UserController.authenticate(req, res, next)
-		.then((user) => {
-			if (req.params.id !== user._id.toString()) {
-				let error = new APIError("Permission denied", httpStatus.FORBIDDEN);
-				return next(error);
-			}
-
-			return User.getByUsername(req.body.username).then(newUser => {
-				if (newUser) {
-					const error = new APIError("The username already exists", httpStatus.CONFLICT);
+			.then((user) => {
+				if (req.params.id !== user._id.toString()) {
+					let error = new APIError("Permission denied", httpStatus.FORBIDDEN);
 					return next(error);
 				}
-				return user.update({"username": req.body.username}, { runValidators: true }).exec();
+
+				return User.getByUsername(req.body.username).then(newUser => {
+					if (newUser) {
+						const error = new APIError("The username already exists", httpStatus.CONFLICT);
+						return next(error);
+					}
+					user.username = req.body.username;
+					return user.save();
+				});
+			}).then(user => {
+				return res.json(UserController.getFilteredUser(user));
+			}).catch((err) => {
+				return next(err);
 			});
-		}).then((result) => {
-			if (result.ok)
-				return result;
-			else {
-				const error = new APIError("Update failed", httpStatus.INTERNAL_SERVER_ERROR);
-				return next(error);
-			}
-		}).then(result => {
-			return User.getById(req.params.id);
-		}).then(user => {
-			return res.json(user);
-		}).catch((err) => {
-			return next(err);
-		});
 	}
 
 	/**
-	 * Send change password email
-	 * @property {string} req.body.email - User email
+	 * Upload user's profile photo
+	 * @role admin, regular user ownself
+	 * @param {string} req.params.id - User's id
+	 * @property {file} req.file - Image file
+	 * @return {Object<User>}
 	 */
-	sendChangePasswordEmail(req, res, next) {
-		const email = req.body.email;
-
-		if (email) {
-			User.findOne({ "email": email }, (err, user) => {
-				if (err) return next(err);
-
-				if (_.isEmpty(user)) {
-					return next(new APIError("Not found", httpStatus.BAD_REQUEST));
+	uploadProfilePhoto(req, res, next) {
+		UserController.authenticate(req, res, next)
+			.then((user) => {
+				if (req.params.id !== user._id.toString()) {
+					let error = new APIError("Permission denied", httpStatus.FORBIDDEN);
+					return next(error);
 				}
 
-				this._jwtManager.signToken('access', user.id).then(accessToken => {
-					return this._mailManager.sendChangePassword(user, accessToken);
-				}).then(response => {
-					if (response) {
-						return res.status(204).json();
-					}
-				})
-				.catch(err => {
-					return next(err);
-				});
-
+				user.profilePhotoUri = req.file.path;
+				//return user.update({ profilePhotoUri: req.file.path }).exec();
+				return user.save();
+			}).then(user => {
+				return res.json(UserController.getFilteredUser(user));
+			}).catch((err) => {
+				return next(err);
 			});
-		} else {
-			const error = new APIError("Email missing", httpStatus.BAD_REQUEST);
-			return next(error);
-		}
 	}
 
 	/**
-	 * Send account verification email
-	 * @property {string} req.body.email - User email
+	 * Upload user's mobile phone number
+	 * @role admin, regular user ownself
+	 * @param {string} req.params.id - User's id
+	 * @property {string} req.body.phoneNumber - User's phone number
+	 * @property {number} req.body.code - Phone verification code
+	 * @return {Object<User>}
 	 */
-	sendAccountVerificationEmail(req, res, next) {
-		const email = req.body.email;
-
-		if (email) {
-			User.findOne({ "email": email }, (err, user) => {
-				if (err) return next(err);
-
-				if (_.isEmpty(user)) {
-					return next(new APIError("Not found", httpStatus.BAD_REQUEST));
+	updateUserPhone(req, res, next) {
+		UserController.authenticate(req, res, next)
+			.then((user) => {
+				if (req.params.id !== user._id.toString()) {
+					return next(new APIError("Permission denied", httpStatus.FORBIDDEN));
 				}
 
-				this._jwtManager.signToken('access', user.id).then(accessToken => {
-					return this._mailManager.sendEmailVerification(user, accessToken);
-				}).then(response => {
-					if (response) {
-						return res.status(204).json();
+				const phoneNumber = req.body.phoneNumber;
+				const code = req.body.code;
+
+				if (!validator.isMobilePhone(phoneNumber, 'zh-CN') || !validator.isInt(code, {min: 100000, max: 999999})) {
+					return next(new APIError("Bad Request Format", httpStatus.BAD_REQUEST));
+				}
+
+				return VerificationCode.getByPhoneNumber(phoneNumber).then(codeObj => {
+					if (_.isEmpty(codeObj)) {
+						return next(new APIError("Code do not exists", httpStatus.UNAUTHORIZED));
+					} else {
+						if (codeObj.code === code) {
+							user.phoneNumber = phoneNumber;
+							return user.save();
+							// return user.update({ "phoneNumber": phoneNumber }).exec();
+						} else {
+							return next(new APIError("Codes do not match", httpStatus.FORBIDDEN));
+						}
 					}
 				})
-				.catch(err => {
-					return next(err);
-				});
+			})
+			.then(user => {
+				return res.json(UserController.getFilteredUser(user));
+			}).catch((err) => {
+				return next(err);
 			});
-		} else {
-			const error = new APIError("Email missing", httpStatus.BAD_REQUEST);
-			return next(error);
-		}
 	}
 
 	/**
 	 * Change password
+	 * @property {string} req.body.password - User's new password
+	 * @property {string} req.body.passwordConfirmation - Password confirmation
 	 */
 	changePassword(req, res, next) {
 		if (req.body.password !== req.body.passwordConfirmation)
 			return done(new APIError("Passwords do not match", httpStatus.BAD_REQUEST));
 
 		const that = this;
-		UserController.authenticate(req, res, next)
-		.then((user) => {
-			const permission = ac.can(user.role).updateOwn('profile');
 
-			if (permission.granted) {
-				return user.update({
-					"password": req.body.password
-				}, { runValidators: true }).exec();
-			} else {
-				return next(new APIError("Permission denied", httpStatus.FORBIDDEN));
-			}
-		}).then((result) => {
-			if (result.ok)
-				return res.status(204).json(result);
-			else return next(new APIError("Update failed", httpStatus.INTERNAL_SERVER_ERROR));
-		})
-		.catch((err) => {
-			return next(err);
-		});
+		UserController.authenticate(req, res, next)
+			.then((user) => {
+				return user.update({ "password": req.body.password}, { runValidators: true }).exec();
+			}).then((result) => {
+				if (result.ok)
+					return res.status(204).json(result);
+				else
+					return next(new APIError("Update user failed", httpStatus.INTERNAL_SERVER_ERROR));
+			})
+			.catch((err) => {
+				return next(err);
+			});
+	}
+
+	/**
+	 * Get users list
+	 * @role admin
+	 * @property {number} req.query.skip - Number of users to be skipped.
+	 * @property {number} req.query.limit - Limit number of users to be returned.
+	 * @returns {User[]}
+	 */
+	getUsersList(req, res, next) {
+		const { limit = 50, skip = 0 } = req.query;
+		UserController.authenticate(req, res, next)
+			.then((user) => {
+				const permission = ac.can(user.role).readAny('account');
+
+				if (permission.granted) {
+					return User.count().exec();
+				} else {
+					throw new APIError("Permission denied", httpStatus.FORBIDDEN);
+				}
+			})
+			.then(count => {
+				req.count = count;
+				return User.getUsersList({ limit, skip });
+			})
+			.then(users => {
+				return res.json({
+					users: users,
+					totalCount: req.count,
+				});
+			})
+			.catch((err) => {
+				return next(err);
+			});
+	}
+
+	/**
+	 * Admin edit user data
+	 * @role admin
+	 * @property {string} req.body.id - Users's id
+	 * @property {string} req.body.role - User's role
+	 * @property {string} req.body.userStatus - Users' status
+	 */
+	adminEditUser(req, res, next) {
+		UserController.authenticate(req, res, next)
+			.then((user) => {
+				if (req.params.id !== user._id.toString()) {
+					throw new APIError("Permission denied", httpStatus.FORBIDDEN);
+				}
+
+				if (_.isEmpty(req.body.id)) {
+					throw new APIError("User do not exists", httpStatus.NOT_FOUND);
+				}
+
+				req.permission = ac.can(user.role).updateAny('account');
+
+				if (req.permission.granted) {
+					return User.getById(req.body.id);
+				} else {
+					throw new APIError("Permission denied", httpStatus.FORBIDDEN);
+				}
+			})
+			.then(user => {
+				if (user) {
+					let newUserInfo = req.permission.filter(req.body);
+					return user.update({...newUserInfo}, { runValidators: true }).exec();
+				}
+				else {
+					throw new APIError("User do not exists", httpStatus.NOT_FOUND)
+				}
+			})
+			.then((result) => {
+				if (result.ok) {
+					return res.status(204).send();
+				} else {
+					throw new APIError("Update user failed", httpStatus.INTERNAL_SERVER_ERROR);
+				}
+			})
+			.catch((err) => {
+				return next(err);
+			});
 	}
 
 	/**
@@ -357,13 +429,30 @@ class UserController extends BaseController {
 				if (info) return reject(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
 				if (user) {
-					// req.user = result.user;
 					return resolve(user);
 				} else {
 					return reject(new APIError("Permission denied", httpStatus.UNAUTHORIZED));
 				}
 			})(req, res, next);
 		});
+	}
+
+	/**
+	 * Get filtered user data
+	 */
+	static getFilteredUser(user) {
+		let permission;
+
+		if (user.role === 'admin' || user.role === 'god') {
+			permission = ac.can(user.role).readAny('account');
+		} else {
+			permission = ac.can(user.role).readOwn('account');
+		}
+
+		const filteredUserData = permission.filter(user.toJSON());
+		filteredUserData._id = user.id.toString();
+
+		return filteredUserData;
 	}
 
 }
