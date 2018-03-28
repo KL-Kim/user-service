@@ -340,25 +340,28 @@ class UserController extends BaseController {
 	/**
 	 * Get users list
 	 * @role admin
-	 * @property {number} req.query.skip - Number of users to be skipped.
-	 * @property {number} req.query.limit - Limit number of users to be returned.
+	 * @property {string} req.query.search - Search user
+	 * @property {number} req.body.skip - Number of users to be skipped.
+	 * @property {number} req.body.limit - Limit number of users to be returned.
+	 * @property {object} req.body.filter - User filter object
 	 * @returns {User[]}
 	 */
-	getUsersList(req, res, next) {
-		const { limit = 50, skip = 0 } = req.query;
+	adminGetUsersList(req, res, next) {
+		const { limit = 20, skip = 0, filter } = req.body;
+		const search = req.query.search;
 		UserController.authenticate(req, res, next)
 			.then((user) => {
 				const permission = ac.can(user.role).readAny('account');
 
 				if (permission.granted) {
-					return User.count().exec();
+					return User.filteredCount({ filter, search });
 				} else {
 					throw new APIError("Permission denied", httpStatus.FORBIDDEN);
 				}
 			})
 			.then(count => {
 				req.count = count;
-				return User.getUsersList({ limit, skip });
+				return User.getUsersList({ limit, skip, filter, search });
 			})
 			.then(users => {
 				return res.json({

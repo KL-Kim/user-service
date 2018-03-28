@@ -2,6 +2,7 @@ import Promise from 'bluebird';
 import mongoose from 'mongoose';
 import httpStatus from 'http-status';
 import bcrypt from 'bcrypt';
+import _ from 'lodash';
 
 import APIError from '../helper/api-error';
 
@@ -12,46 +13,47 @@ const saltRounds = 12;
  * User mongoose schema
  */
 const UserSchema = new mongoose.Schema({
-	username: {
+	"username": {
 		type: String,
 		required: true,
+		trim: true,
+		unique: true,
 		minLength: [4, 'The value of path `{PATH}` (`{VALUE}`) is shorter than the minimum allowed length ({MINLENGTH}).'],
 		maxLength: [30, 'The value of path `{PATH}` (`{VALUE}`) is longer than the maximum allowed length ({MINLENGTH}).'],
-		index: {
-			unique: true
-		}
 	},
-	email: {
+	"email": {
 		type: String,
 		unique: true,
 		required: true,
+		trim: true,
 		match: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
-		index: {
-			unique: true
-		}
 	},
-	phoneNumber: {
+	"phoneNumber": {
 		type: String,
+		// required: [() => { return this.email == null; }, 'phoneNumber is required if email is not specified'],
 	},
-	password: {
+	"password": {
 		type: String,
 		minLength: [8, 'The value of path `{PATH}` (`{VALUE}`) is shorter than the minimum allowed length ({MINLENGTH}).'],
 		required: true
 	},
-	firstName: {
+	"firstName": {
 		type: String
 	},
-	lastName: {
+	"lastName": {
 		type: String
 	},
-	gender: {
+	"language": {
+		type: String
+	},
+	"gender": {
 		type: String,
 		enum: ['Male', 'Female', 'Other']
 	},
-	birthday: {
+	"birthday": {
 		type: Date,
 	},
-	address: {
+	"address": {
 		province: {
 			name: {
 				type: String
@@ -78,40 +80,47 @@ const UserSchema = new mongoose.Schema({
 		},
 		street: {
 			type: String,
+			trim: true,
 		},
 	},
-	isVerified: {
+	"isVerified": {
 		type: Boolean,
 		default: false
 	},
-	point: {
+	"point": {
 		type: Number,
 		default: 0
 	},
-	following: [{
+	"following": [{
 		id: {
 			type: String,
 		},
 		username: {
 			type: String
+		},
+		profilePhotoUri: {
+			type: String
 		}
 	}],
-	followers: [{
+	"followers": [{
 		id: {
 			type: String,
 		},
 		username: {
 			type: String
+		},
+		profilePhotoUri: {
+			type: String
 		}
 	}],
-	interestedIn:[{
+	"interestedIn":[{
 		type: String,
 	}],
-	profilePhotoUri: {
+	"profilePhotoUri": {
 		type: String,
 		default: ''
 	},
-	lastLogin: [{
+	"lastLogin": [{
 		agent: {
 			type: String
 		},
@@ -123,22 +132,24 @@ const UserSchema = new mongoose.Schema({
 			default: Date.now
 		},
 	}],
-	role: {
+	"role": {
 		type: String,
 		required: true,
 		default: 'regular',
 		enum: ['god', 'admin', 'manager', 'regular']
 	},
-	userStatus: {
+	"userStatus": {
 		type: String,
 		enum: ['normal', 'suspended'],
 		default: 'normal'
 	},
-	createdAt: {
+	"createdAt": {
 		type: Date,
 		default: Date.now
 	},
 });
+
+UserSchema.index({username: 'text', email: 'text'});
 
 /**
  * Virtuals
@@ -254,14 +265,119 @@ UserSchema.statics = {
 	 * List users in descending order of 'createdAt' timestamp.
 	 * @param {number} skip - Number of users to be skipped.
 	 * @param {number} limit - Limit number of users to be returned.
+	 * @param {object} filter - Filter users list
 	 * @returns {Promise<User[]>}
 	 */
-	getUsersList({skip = 0, limit = 50} = {}) {
-		return this.find()
+	getUsersList({ skip = 0, limit = 50, filter = {}, search } = {}) {
+		let conditions,
+			searchCondition,
+			roleCondition,
+			statusCondition;
+
+		if (!_.isEmpty(filter.role) && filter.role) {
+			roleCondition = {
+				"role": {
+					"$in": filter.role
+				}
+			}
+		}
+
+		if (!_.isEmpty(filter.userStatus) && filter.userStatus) {
+			statusCondition = {
+				"userStatus": {
+					"$in": filter.userStatus
+				}
+			}
+		}
+
+		if (search) {
+			searchCondition = {
+				$or: [
+					{
+						"username": {
+							$regex: search,
+							$options: 'i'
+						}
+					},
+					{
+						"email": {
+							$regex: search,
+							$options: 'i'
+						}
+					}
+				]
+			}
+		}
+
+		if (roleCondition || statusCondition || searchCondition) {
+			conditions = {
+				"$and": [_.isEmpty(searchCondition) ? {} : searchCondition,
+					_.isEmpty(roleCondition) ? {} : roleCondition,
+					_.isEmpty(statusCondition) ? {} : statusCondition]
+			};
+		}
+
+		return this.find(_.isEmpty(conditions) ? {} : conditions)
 			.sort({ createdAt: -1 })
 			.skip(+skip)
 			.limit(+limit)
 			.exec();
+	},
+
+	/**
+	 * Count of filtered users
+	 * @param {object} filter - Filter users list
+	 */
+	filteredCount({ filter = {}, search } = {}) {
+		let conditions,
+			searchCondition,
+			roleCondition,
+			statusCondition;
+
+		if (!_.isEmpty(filter.role) && filter.role) {
+			roleCondition = {
+				"role": {
+					"$in": filter.role
+				}
+			}
+		}
+
+		if (!_.isEmpty(filter.userStatus) && filter.userStatus) {
+			statusCondition = {
+				"userStatus": {
+					"$in": filter.userStatus
+				}
+			}
+		}
+
+		if (search) {
+			searchCondition = {
+				$or: [
+					{
+						"username": {
+							$regex: search,
+							$options: 'i'
+						}
+					},
+					{
+						"email": {
+							$regex: search,
+							$options: 'i'
+						}
+					}
+				]
+			}
+		}
+
+		if (roleCondition || statusCondition || searchCondition) {
+			conditions = {
+				"$and": [_.isEmpty(searchCondition) ? {} : searchCondition,
+					_.isEmpty(roleCondition) ? {} : roleCondition,
+					_.isEmpty(statusCondition) ? {} : statusCondition]
+			};
+		}
+
+		return this.count(_.isEmpty(conditions) ? {} : conditions).exec();
 	}
 };
 

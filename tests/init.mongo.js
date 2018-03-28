@@ -8,14 +8,23 @@ User.remove({}, function(err) {
 	console.log("Removed mongodb documents");
 });
 
-let god = new User({
+let admin = new User({
 	username: 'adminKim911',
 	email: 'jinguanglong11@icloud.com',
 	password: '1234567890',
 	role: 'admin',
 });
 
-god.save();
+admin.save();
+
+let manager = new User({
+	username: 'jinguanglong11',
+	email: 'jinguanglong11@hotmail.com',
+	password: 'asdfasdf',
+	role: 'manager',
+});
+
+manager.save();
 
 for (let i = 0; i < 100; i++) {
 	let user = new User({

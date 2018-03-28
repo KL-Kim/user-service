@@ -26,7 +26,7 @@ const grants = {
 	},
 	manager: {
 		account: {
-			"read:own": ["*", "!password", "!role", "!createdAt", "!userStatus"],
+			"read:own": ["*", "!password", "!createdAt", "!userStatus"],
 			//"update:own": ["*", "!role", "!point", "!userStatus", "!isVerified", "!createdAt", "!lastLogin"],
 			"update:own": ["firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
 		},

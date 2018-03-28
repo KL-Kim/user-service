@@ -37,8 +37,8 @@ if (process.env.NODE_ENV === 'development') {
 // });
 
 // Security Concern
-// app.use(helmet());
-// app.use(helmet.hidePoweredBy());
+app.use(helmet());
+app.use(helmet.hidePoweredBy());
 app.use(cors);
 // app.use(csurf);
 // app.use(csp);

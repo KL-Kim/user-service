@@ -6,7 +6,7 @@
 import Joi from 'joi';
 
 export default {
-	
+
 	/** POST /api/v1/user/signup **/
 	"register": {
 		"body": {
@@ -31,11 +31,18 @@ export default {
 		}
 	},
 
-	/** GET /api/v1/user/ **/
+	/** POST /api/v1/user/ **/
 	"getUsersList": {
-		"query": {
+		"params": {
+			search: Joi.string().trim()
+		},
+		"body": {
 			limit: Joi.number(),
-			skip: Joi.number()
+			skip: Joi.number(),
+			filter: {
+				"role": Joi.array().items(Joi.string().valid(['regular', 'manager', 'admin'])),
+				"userStatus": Joi.array().items(Joi.string().valid(['normal', 'suspended'])),
+			},
 		}
 	},
 

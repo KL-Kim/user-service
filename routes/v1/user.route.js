@@ -34,9 +34,6 @@ router.post('/register', validate(paramValidation.register), userController.regi
 /** GET /api/v1/user/verify - Account Verification **/
 router.get('/verify', userController.accountVerification);
 
-/** GET /api/v1/user - Get list of users **/
-router.get('/', validate(paramValidation.getUsersList), userController.getUsersList);
-
 /** GET /api/v1/user/:id - Get user data **/
 router.get('/:id', validate(paramValidation.getUserById), userController.getUserById);
 
@@ -54,6 +51,9 @@ router.post('/profilePhoto/:id', upload.single('avatar'), userController.uploadP
 
 /** POST /api/v1/user/password - Change password **/
 router.post('/password', validate(paramValidation.changePassword), userController.changePassword);
+
+/** POST /api/v1/user - Get list of users **/
+router.post('/', validate(paramValidation.getUsersList), userController.adminGetUsersList);
 
 /** POST /api/v1/user/admin/:id - Admin edit user data **/
 router.post('/admin/:id', validate(paramValidation.adminEditUser), userController.adminEditUser);
