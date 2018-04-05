@@ -149,7 +149,13 @@ const UserSchema = new mongoose.Schema({
 	},
 });
 
-UserSchema.index({username: 'text', email: 'text'});
+/**
+ * Index
+ */
+UserSchema.index({
+	username: 'text',
+	email: 'text'
+});
 
 /**
  * Virtuals
@@ -266,6 +272,7 @@ UserSchema.statics = {
 	 * @param {number} skip - Number of users to be skipped.
 	 * @param {number} limit - Limit number of users to be returned.
 	 * @param {object} filter - Filter users list
+	 * @param {string} search - Search string
 	 * @returns {Promise<User[]>}
 	 */
 	getUsersList({ skip = 0, limit = 50, filter = {}, search } = {}) {
@@ -351,17 +358,18 @@ UserSchema.statics = {
 		}
 
 		if (search) {
+			const escapedString =  _.escapeRegExp(search)
 			searchCondition = {
 				$or: [
 					{
 						"username": {
-							$regex: search,
+							$regex: escapedString,
 							$options: 'i'
 						}
 					},
 					{
 						"email": {
-							$regex: search,
+							$regex: escapedString,
 							$options: 'i'
 						}
 					}

@@ -32,7 +32,7 @@ class AuthController extends BaseController {
 			if (err) return next(err);
 			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
-			that._jwtManager.signToken('ACCESS', result.user.id).then((token) => {
+			that._jwtManager.signToken('ACCESS', result.user.id, result.user.role).then((token) => {
 				return res.json({
 					"token": token,
 				});
@@ -67,16 +67,16 @@ class AuthController extends BaseController {
 				if (err) return next(err);
 				req.user = savedUser;
 
-				that._jwtManager.signToken('REFRESH', savedUser.id)
+				that._jwtManager.signToken('REFRESH', savedUser.id, savedUser.role)
 					.then((refreshToken) => {
 						res.cookie(config.refreshTokenCookieKey, refreshToken, {
 							"maxAge": ms(config.refreshTokenOptions.expiresIn),
 							"httpOnly": true,
 						});
 
-						return user.id;
-					}).then((uid) => {
-						return that._jwtManager.signToken('ACCESS', uid);
+						return user;
+					}).then(user => {
+						return that._jwtManager.signToken('ACCESS', user.id, user.role);
 					}).then((accessToken) => {
 						let permission;
 						const user = req.user;
@@ -139,7 +139,7 @@ class AuthController extends BaseController {
 					return next(new APIError("Not found", httpStatus.BAD_REQUEST));
 				}
 
-				this._jwtManager.signToken('ACCESS', user.id).then(accessToken => {
+				this._jwtManager.signToken('ACCESS', user.id, user.role).then(accessToken => {
 					return this._mailManager.sendChangePassword(user, accessToken);
 				}).then(response => {
 					if (response) {
@@ -172,7 +172,7 @@ class AuthController extends BaseController {
 					return next(new APIError("Not found", httpStatus.BAD_REQUEST));
 				}
 
-				this._jwtManager.signToken('ACCESS', user.id).then(accessToken => {
+				this._jwtManager.signToken('ACCESS', user.id, user.role).then(accessToken => {
 					return this._mailManager.sendEmailVerification(user, accessToken);
 				}).then(response => {
 					if (response) {

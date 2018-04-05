@@ -124,14 +124,14 @@ class UserController extends BaseController {
 			})
 			.then((savedUser) => {
 				req.user = savedUser;
-				return that._jwtManager.signToken('REFRESH', savedUser.id);
+				return that._jwtManager.signToken('REFRESH', savedUser.id, savedUser.role);
 			})
 			.then((refreshToken) => {
 				res.cookie(config.refreshTokenCookieKey, refreshToken, {
 					expires: new Date(Date.now() + ms('60d')),
 					httpOnly: true
 				});
-				return that._jwtManager.signToken('ACCESS', req.user.id);
+				return that._jwtManager.signToken('ACCESS', req.user.id, req.user.role);
 			}).then((accessToken) => {
 				req.accessToken = accessToken;
 				return that._mailManager.sendEmailVerification(req.user, accessToken);

@@ -7,6 +7,13 @@ import paramValidation from '../../config/param-validation';
 
 const router = Express.Router();
 const userController = new UserController();
+validate.options({
+  allowUnknownBody: false,
+  allowUnknownHeaders: true,
+  allowUnknownQuery: true,
+  allowUnknownParams: true,
+  allowUnknownCookies: true
+});
 
 const storage = multer.diskStorage({
   "destination": (req, file, cb) => {

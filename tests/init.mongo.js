@@ -18,13 +18,22 @@ let admin = new User({
 admin.save();
 
 let manager = new User({
-	username: 'jinguanglong11',
-	email: 'jinguanglong11@hotmail.com',
+	username: 'manager',
+	email: 'jinguanglong11@gmail.com',
 	password: 'asdfasdf',
 	role: 'manager',
 });
 
 manager.save();
+
+let regular = new User({
+	username: 'regular',
+	email: 'jinguanglong11@hotmail.com',
+	password: 'asdfasdf',
+	role: 'regular',
+});
+
+regular.save();
 
 for (let i = 0; i < 100; i++) {
 	let user = new User({

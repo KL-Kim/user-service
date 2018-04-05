@@ -6,6 +6,13 @@ import paramValidation from '../../config/param-validation';
 
 const router = Express.Router();
 const authController = new AuthController();
+validate.options({
+  allowUnknownBody: false,
+  allowUnknownHeaders: true,
+  allowUnknownQuery: true,
+  allowUnknownParams: true,
+  allowUnknownCookies: true
+});
 
 /** Post /api/v1/auth/login - User login **/
 router.post('/login', validate(paramValidation.login), authController.login);
@@ -17,8 +24,8 @@ router.get('/logout', authController.logout);
 router.get('/token', authController.issueAccessToken);
 
 /** GET /api/v1/auth/phoneVerificationCode/:phoneNumber - Send Verification Code **/
-router.get('/phoneVerificationCode/:phoneNumber', 
-	validate(paramValidation.sendVerificationCode), 
+router.get('/phoneVerificationCode/:phoneNumber',
+	validate(paramValidation.sendVerificationCode),
 	authController.sendPhoneVerificationCode
 );
 

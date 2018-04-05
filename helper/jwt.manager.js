@@ -36,24 +36,31 @@ class jwtManager extends BaseAutoBindedClass {
 	 * @param {ObjectId} uid - The objectId of user
 	 * @returns {Promise<token, APIError>}
 	 */
-	signToken(type, uid) {
+	signToken(type, uid, role = "regular") {
 		const that = this;
 		return new Promise((resolve, reject) => {
-			let payload = {
-				uid: uid,
-				tid: uuid.v1()
-			};
-			let privateKey;
-			let options;
+			if (!uid || !type) return reject(new APIError("Bad params"), httpStatus.INTERNAL_SERVER_ERROR, true);
 
-			if (type === 'REFRESH') {
-				privateKey = that._refreshTokenPrivateKey;
-				options = that._refreshTokenOptions;
-			} else if (type === 'ACCESS'){
-				privateKey = that._accessTokenPrivateKey;
-				options = that._accessTokenOptions;
-			} else {
-				reject(new APIError("Invalid token type", httpStatus.INTERNAL_SERVER_ERROR, true));
+			let payload = {
+				"tid": uuid.v1(),
+				"uid": uid,
+				"role": role,
+			};
+			let privateKey, options;
+
+			switch (type) {
+				case "REFRESH":
+					privateKey = that._refreshTokenPrivateKey;
+					options = that._refreshTokenOptions;
+					break;
+
+				case "ACCESS":
+					privateKey = that._accessTokenPrivateKey;
+					options = that._accessTokenOptions;
+					break;
+
+				default:
+					return reject(new APIError("Type missing"), httpStatus.INTERNAL_SERVER_ERROR, true);
 			}
 
 			if (privateKey && options) {

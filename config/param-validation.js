@@ -57,15 +57,15 @@ export default {
 			gender: Joi.string().valid(['Male', 'Female', 'Other']),
 			address: {
 				province: {
-					name: Joi.string(),
+					name: Joi.string().trim(),
 					code: Joi.number(),
 				},
 				city:{
-					name: Joi.string(),
+					name: Joi.string().trim(),
 					code: Joi.number(),
 				},
 				area: {
-					name: Joi.string(),
+					name: Joi.string().trim(),
 					code: Joi.number(),
 				},
 				street: Joi.string().trim(),
