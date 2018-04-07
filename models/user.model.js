@@ -91,6 +91,11 @@ const UserSchema = new mongoose.Schema({
 		type: Number,
 		default: 0
 	},
+	"vip": {
+		type: String,
+		enum: ['normal', 'copper', 'silver', 'gold', 'premium'],
+		default: 'normal',
+	},
 	"following": [{
 		id: {
 			type: String,
