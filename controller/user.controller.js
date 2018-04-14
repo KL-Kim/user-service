@@ -124,14 +124,14 @@ class UserController extends BaseController {
 			})
 			.then((savedUser) => {
 				req.user = savedUser;
-				return that._jwtManager.signToken('REFRESH', savedUser.id, savedUser.role);
+				return that._jwtManager.signToken('REFRESH', savedUser.id, savedUser.role, savedUser.isVerified);
 			})
 			.then((refreshToken) => {
 				res.cookie(config.refreshTokenCookieKey, refreshToken, {
 					expires: new Date(Date.now() + ms('60d')),
 					httpOnly: true
 				});
-				return that._jwtManager.signToken('ACCESS', req.user.id, req.user.role);
+				return that._jwtManager.signToken('ACCESS', req.user.id, req.user.role, req.user.isVerified);
 			}).then((accessToken) => {
 				req.accessToken = accessToken;
 				return that._mailManager.sendEmailVerification(req.user, accessToken);
@@ -361,7 +361,7 @@ class UserController extends BaseController {
 			})
 			.then(count => {
 				req.count = count;
-				return User.getUsersList({ limit, skip, filter, search });
+				return User.getUsersList({ skip, limit, filter, search });
 			})
 			.then(users => {
 				return res.json({

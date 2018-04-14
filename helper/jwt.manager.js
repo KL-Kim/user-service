@@ -36,7 +36,7 @@ class jwtManager extends BaseAutoBindedClass {
 	 * @param {ObjectId} uid - The objectId of user
 	 * @returns {Promise<token, APIError>}
 	 */
-	signToken(type, uid, role = "regular") {
+	signToken(type, uid, role = "regular", isVerified = "false") {
 		const that = this;
 		return new Promise((resolve, reject) => {
 			if (!uid || !type) return reject(new APIError("Bad params"), httpStatus.INTERNAL_SERVER_ERROR, true);
@@ -45,6 +45,7 @@ class jwtManager extends BaseAutoBindedClass {
 				"tid": uuid.v1(),
 				"uid": uid,
 				"role": role,
+				"isVerified": isVerified,
 			};
 			let privateKey, options;
 

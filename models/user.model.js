@@ -280,7 +280,7 @@ UserSchema.statics = {
 	 * @param {string} search - Search string
 	 * @returns {Promise<User[]>}
 	 */
-	getUsersList({ skip = 0, limit = 50, filter = {}, search } = {}) {
+	getUsersList({ skip = 0, limit = 20, filter = {}, search } = {}) {
 		let conditions,
 			searchCondition,
 			roleCondition,
