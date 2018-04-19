@@ -5,13 +5,14 @@ import crypto from 'crypto';
 import ms from 'ms';
 import _ from 'lodash';
 import validator from 'validator';
+import { AccessControl } from 'accesscontrol';
 
 import BaseController from './base.controller';
 import APIError from '../helper/api-error';
 import JwtManager from '../helper/jwt.manager';
 import MailManager from '../helper/mail.manager';
 import promiseFor from '../helper/promise-for';
-import ac from '../config/rbac.config';
+import grants from '../config/rbac.config';
 import User from '../models/user.model';
 import VerificationCode from '../models/code.model';
 import config from '../config/config';
@@ -22,6 +23,7 @@ class UserController extends BaseController {
 
 		this._jwtManager = new JwtManager();
 		this._mailManager = new MailManager();
+		this._ac = new AccessControl(grants);
 	}
 
 	/**
@@ -46,9 +48,9 @@ class UserController extends BaseController {
 				let permission;
 
 				if (user.role === 'admin' || user.role === 'god') {
-					permission = ac.can(user.role).readAny('account');
+					permission = this._ac.can(user.role).readAny('account');
 				} else {
-					permission = ac.can(user.role).readOwn('account');
+					permission = this._ac.can(user.role).readOwn('account');
 				}
 
 				if (permission.granted) {
@@ -192,7 +194,7 @@ class UserController extends BaseController {
 					return next(error);
 				}
 
-				let	permission = ac.can(user.role).updateOwn('account');
+				let	permission = this._ac.can(user.role).updateOwn('account');
 				let newUserInfo = permission.filter(req.body);
 
 				return user.update({...newUserInfo}, { runValidators: true }).exec();
@@ -351,7 +353,7 @@ class UserController extends BaseController {
 		const search = req.query.search;
 		UserController.authenticate(req, res, next)
 			.then((user) => {
-				const permission = ac.can(user.role).readAny('account');
+				const permission = this._ac.can(user.role).readAny('account');
 
 				if (permission.granted) {
 					return User.filteredCount({ filter, search });
@@ -392,7 +394,7 @@ class UserController extends BaseController {
 					throw new APIError("User do not exists", httpStatus.NOT_FOUND);
 				}
 
-				req.permission = ac.can(user.role).updateAny('account');
+				req.permission = this._ac.can(user.role).updateAny('account');
 
 				if (req.permission.granted) {
 					return User.getById(req.body.id);
@@ -446,10 +448,12 @@ class UserController extends BaseController {
 	static getFilteredUser(user) {
 		let permission;
 
+		this._ac = new AccessControl(grants);
+
 		if (user.role === 'admin' || user.role === 'god') {
-			permission = ac.can(user.role).readAny('account');
+			permission = this._ac.can(user.role).readAny('account');
 		} else {
-			permission = ac.can(user.role).readOwn('account');
+			permission = this._ac.can(user.role).readOwn('account');
 		}
 
 		const filteredUserData = permission.filter(user.toJSON());

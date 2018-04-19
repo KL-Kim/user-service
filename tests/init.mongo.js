@@ -11,7 +11,7 @@ User.remove({}, function(err) {
 let admin = new User({
 	username: 'adminKim911',
 	email: 'jinguanglong11@icloud.com',
-	password: '1234567890',
+	password: 'asdfasdf',
 	role: 'admin',
 });
 

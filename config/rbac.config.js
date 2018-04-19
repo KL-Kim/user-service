@@ -1,10 +1,8 @@
 /**
  * Role based Access Control Config
- * @export {AccessControl}
+ * @export {Object}
  * @version 0.0.1
  */
-
-import { AccessControl } from 'accesscontrol';
 
 const grants = {
 	guest: {
@@ -84,8 +82,4 @@ const grants = {
 	}
 };
 
-const ac = new AccessControl(grants);
-
-ac.lock();
-
-export default ac;
+export default grants;

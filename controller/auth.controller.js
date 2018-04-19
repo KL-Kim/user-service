@@ -4,6 +4,7 @@ import ms from 'ms';
 import _ from 'lodash';
 import validator from 'validator';
 import SMSClient from '@alicloud/sms-sdk';
+import { AccessControl } from 'accesscontrol';
 
 import BaseController from './base.controller';
 import APIError from '../helper/api-error';
@@ -12,7 +13,7 @@ import MailManager from '../helper/mail.manager';
 import config from '../config/config';
 import User from '../models/user.model';
 import VerificationCode from '../models/code.model';
-import ac from '../config/rbac.config';
+import grants from '../config/rbac.config';
 
 class AuthController extends BaseController {
 	constructor() {
@@ -20,6 +21,7 @@ class AuthController extends BaseController {
 
 		this._jwtManager = new JwtManager();
 		this._mailManager = new MailManager();
+		this._ac = new AccessControl(grants);
 	}
 
 	/**
@@ -82,9 +84,9 @@ class AuthController extends BaseController {
 						const user = req.user;
 
 						if (user.role === 'admin' || user.role === 'god') {
-							permission = ac.can(user.role).readAny('account');
+							permission = this._ac.can(user.role).readAny('account');
 						} else {
-							permission = ac.can(user.role).readOwn('account');
+							permission = this._ac.can(user.role).readOwn('account');
 						}
 
 						const filteredUser = permission.filter(user.toJSON());

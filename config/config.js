@@ -22,15 +22,19 @@ function setConfig() {
 			.default('development'),
 		SERVER_PORT: Joi.number()
 			.default(3001),
+
 		MONGO_HOST: Joi.string().default('localhost'),
 		MONGO_PORTS: Joi.number().default(27017),
+
 		WEB_SERVICE_HOST: Joi.string().required(),
 		WEB_SERVICE_PORT: Joi.number().default(80),
+
 		REFRESH_JWT_ALGORITHM: Joi.string().default('RS256'),
 		REFRESH_JWT_EXPIRATION: Joi.string().default(ms('60d')),
 		REFRESH_JWT_ISSUER: Joi.string().allow(''),
 		REFRESH_JWT_AUDIENCE: Joi.string().allow(''),
 		REFRESH_JWT_KEY: Joi.string().default('id'),
+
 		ACCESS_JWT_ALGORITHM: Joi.string().default('RS256'),
 		ACCESS_JWT_ISSUER: Joi.string().allow(''),
 		ACCESS_JWT_AUDIENCE: Joi.string().allow(''),
@@ -43,7 +47,7 @@ function setConfig() {
 	if (error) {
 		throw new Error(`Config Validation Error: ${error.message}`);
 	}
-	
+
 	const config = {
 		env: envVars.NODE_ENV,
 		port: envVars.SERVER_PORT,
