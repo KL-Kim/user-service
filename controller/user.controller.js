@@ -27,45 +27,60 @@ class UserController extends BaseController {
 	}
 
 	/**
-	 * Get user by id
+	 * Get single user by id
 	 * @role admin, regular user ownself
 	 * @property {OjectId} req.params.id - user's id in url path
+	 * @property {String} req.query.by - Who get user info,
 	 * @returns {User}
 	 */
-	getUserById(req, res, next) {
+	getSingleUser(req, res, next) {
 		UserController.authenticate(req, res, next)
-			.then((user) => {
-				if (req.params.id !== user._id.toString()) {
-					throw new Error("Permission denied", httpStatus.FORBIDDEN);
-				}
+			.then(user => {
 
-				const lastLogin = {
-					agent: req.useragent.browser,
-					ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
-				 	time: Date.now(),
-				};
+				req.user = user;
 
-				let permission;
+				return User.getById(req.params.id);
+			})
+			.then(user => {
+				let permission, isOwn;
 
-				if (user.role === 'admin' || user.role === 'god') {
-					permission = this._ac.can(user.role).readAny('account');
-				} else {
+				if (req.user._id.toString() === user._id.toString()) {
+					isOwn = true;
 					permission = this._ac.can(user.role).readOwn('account');
-				}
-
-				if (permission.granted) {
-					user.lastLogin.push(lastLogin);
-
-					user.save((err, savedUser) => {
-						const result = permission.filter(savedUser.toJSON());
-						result._id = savedUser.id.toString();
-						return res.status(200).json(result);
-					})
-
 				} else {
-					throw new APIError("Permission denied", httpStatus.FORBIDDEN);
+					if (req.user.role === 'admin' || req.user.role === 'god') {
+						isOwn = false;
+						permission = this._ac.can(user.role).readAny('account');
+
+						return user;
+					} else {
+						throw new APIError("Forbidden", httpStatus.FORBIDDEN);
+					}
 				}
-			}).catch((err) => {
+
+				if (isOwn) {
+					const lastLogin = {
+						agent: req.useragent.browser,
+						ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+					 	time: Date.now(),
+					};
+
+					user.lastLogin.push(lastLogin);
+				}
+
+				return user.save();
+			})
+			.then(user => {
+				let filteredUser;
+				if (req.user.role === 'admin' || req.user.role === 'god') {
+					filteredUser = user;
+				} else {
+					filteredUser = UserController.getFilteredUser(user)
+				}
+
+				return res.json(filteredUser);
+			})
+			.catch((err) => {
 				return next(err);
 			});
 	}
@@ -190,7 +205,7 @@ class UserController extends BaseController {
 		UserController.authenticate(req, res, next)
 			.then((user) => {
 				if (req.params.id !== user._id.toString()) {
-					let error = new APIError("Permission denied", httpStatus.FORBIDDEN);
+					let error = new APIError("Forbidden", httpStatus.FORBIDDEN);
 					return next(error);
 				}
 
@@ -227,7 +242,7 @@ class UserController extends BaseController {
 		UserController.authenticate(req, res, next)
 			.then((user) => {
 				if (req.params.id !== user._id.toString()) {
-					let error = new APIError("Permission denied", httpStatus.FORBIDDEN);
+					let error = new APIError("Forbidden", httpStatus.FORBIDDEN);
 					return next(error);
 				}
 
@@ -257,16 +272,18 @@ class UserController extends BaseController {
 		UserController.authenticate(req, res, next)
 			.then((user) => {
 				if (req.params.id !== user._id.toString()) {
-					let error = new APIError("Permission denied", httpStatus.FORBIDDEN);
+					let error = new APIError("Forbidden", httpStatus.FORBIDDEN);
 					return next(error);
 				}
 
 				user.profilePhotoUri = req.file.path;
 				//return user.update({ profilePhotoUri: req.file.path }).exec();
 				return user.save();
-			}).then(user => {
+			})
+			.then(user => {
 				return res.json(UserController.getFilteredUser(user));
-			}).catch((err) => {
+			})
+			.catch((err) => {
 				return next(err);
 			});
 	}
@@ -283,7 +300,7 @@ class UserController extends BaseController {
 		UserController.authenticate(req, res, next)
 			.then((user) => {
 				if (req.params.id !== user._id.toString()) {
-					return next(new APIError("Permission denied", httpStatus.FORBIDDEN));
+					return next(new APIError("Forbidden", httpStatus.FORBIDDEN));
 				}
 
 				const phoneNumber = req.body.phoneNumber;
@@ -358,7 +375,7 @@ class UserController extends BaseController {
 				if (permission.granted) {
 					return User.filteredCount({ filter, search });
 				} else {
-					throw new APIError("Permission denied", httpStatus.FORBIDDEN);
+					throw new APIError("Forbidden", httpStatus.FORBIDDEN);
 				}
 			})
 			.then(count => {
@@ -379,37 +396,26 @@ class UserController extends BaseController {
 	/**
 	 * Admin edit user data
 	 * @role admin
-	 * @property {string} req.body.id - Users's id
+	 * @property {string} req.params.id - Users's id
 	 * @property {string} req.body.role - User's role
 	 * @property {string} req.body.userStatus - Users' status
 	 */
 	adminEditUser(req, res, next) {
 		UserController.authenticate(req, res, next)
 			.then((user) => {
-				if (req.params.id !== user._id.toString()) {
-					throw new APIError("Permission denied", httpStatus.FORBIDDEN);
-				}
-
-				if (_.isEmpty(req.body.id)) {
-					throw new APIError("User do not exists", httpStatus.NOT_FOUND);
-				}
-
 				req.permission = this._ac.can(user.role).updateAny('account');
 
 				if (req.permission.granted) {
-					return User.getById(req.body.id);
+					return User.getById(req.params.id);
 				} else {
-					throw new APIError("Permission denied", httpStatus.FORBIDDEN);
+					throw new APIError("Forbidden", httpStatus.FORBIDDEN);
 				}
 			})
 			.then(user => {
-				if (user) {
-					let newUserInfo = req.permission.filter(req.body);
-					return user.update({...newUserInfo}, { runValidators: true }).exec();
-				}
-				else {
-					throw new APIError("User do not exists", httpStatus.NOT_FOUND)
-				}
+				if (_.isEmpty(user)) throw new APIError("User do not exists", httpStatus.NOT_FOUND);
+
+				let newUserInfo = req.permission.filter(req.body);
+				return user.update({...newUserInfo}, { runValidators: true }).exec();
 			})
 			.then((result) => {
 				if (result.ok) {
@@ -436,7 +442,7 @@ class UserController extends BaseController {
 				if (user) {
 					return resolve(user);
 				} else {
-					return reject(new APIError("Permission denied", httpStatus.UNAUTHORIZED));
+					return reject(new APIError("Unauthorized", httpStatus.UNAUTHORIZED));
 				}
 			})(req, res, next);
 		});
@@ -448,12 +454,12 @@ class UserController extends BaseController {
 	static getFilteredUser(user) {
 		let permission;
 
-		this._ac = new AccessControl(grants);
+		const ac = new AccessControl(grants);
 
 		if (user.role === 'admin' || user.role === 'god') {
-			permission = this._ac.can(user.role).readAny('account');
+			permission = ac.can(user.role).readAny('account');
 		} else {
-			permission = this._ac.can(user.role).readOwn('account');
+			permission = ac.can(user.role).readOwn('account');
 		}
 
 		const filteredUserData = permission.filter(user.toJSON());

@@ -41,13 +41,13 @@ router.post('/register', validate(paramValidation.register), userController.regi
 /** GET /api/v1/user/verify - Account Verification **/
 router.get('/verify', userController.accountVerification);
 
-/** GET /api/v1/user/:id - Get user data **/
-router.get('/:id', validate(paramValidation.getUserById), userController.getUserById);
+/** GET /api/v1/user/:id - Get signle user data **/
+router.get('/:id', validate(paramValidation.getSingleUser), userController.getSingleUser);
 
-/** PUT /api/v1/user/:id - Edit user profile info **/
+/** PUT /api/v1/user/:id - Update user profile info **/
 router.put('/:id', validate(paramValidation.updateUser), userController.updateUserProfile);
 
-/** PUT /api/v1/user/username/:id - Edit user profile info **/
+/** PUT /api/v1/user/username/:id - Update username **/
 router.put('/useranme/:id', validate(paramValidation.updateUsername), userController.updateUsername);
 
 /** PUT /api/v1/user/phone/:id - Update user telephone **/

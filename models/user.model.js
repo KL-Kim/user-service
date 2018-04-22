@@ -234,8 +234,8 @@ UserSchema.methods = {
 		let obj = this.toObject();
 		delete obj.password;
 		delete obj.__v;
-		obj.createdAt = obj.createdAt.toLocaleDateString();
-		obj.birthday = obj.birthday ? obj.birthday.toLocaleDateString() : '';
+		if (obj. createdAt) obj.createdAt = obj.createdAt.toLocaleDateString();
+		if (obj.birthday) obj.birthday = obj.birthday ? obj.birthday.toLocaleDateString() : '';
 		return obj;
 	},
 };
@@ -329,7 +329,7 @@ UserSchema.statics = {
 			};
 		}
 
-		return this.find(_.isEmpty(conditions) ? {} : conditions)
+		return this.find(_.isEmpty(conditions) ? {} : conditions, 'email username firstName lastName role userStatus')
 			.sort({ createdAt: -1 })
 			.skip(+skip)
 			.limit(+limit)

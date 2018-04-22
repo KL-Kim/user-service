@@ -25,7 +25,7 @@ export default {
 	},
 
 	/** GET /api/v1/user/:id **/
-	"getUserById": {
+	"getSingleUser": {
 		"params": {
 			id: Joi.string().hex().required()
 		}
