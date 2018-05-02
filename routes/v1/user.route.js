@@ -50,7 +50,10 @@ router.put('/:id', validate(paramValidation.updateUser), userController.updateUs
 /** PUT /api/v1/user/username/:id - Update username **/
 router.put('/useranme/:id', validate(paramValidation.updateUsername), userController.updateUsername);
 
-/** PUT /api/v1/user/phone/:id - Update user telephone **/
+/** POST /api/v1/user/favor/:id - Add or delete favorite business **/
+router.post('/favor/:id', validate(paramValidation.operateFavor), userController.operateFavor);
+
+/** POST /api/v1/user/phone/:id - Update user telephone **/
 router.post('/phone/:id', validate(paramValidation.updateUserPhone), userController.updateUserPhone);
 
 /** POST /api/v1/user/photo/:id - Update user profile photo **/
@@ -59,10 +62,10 @@ router.post('/profilePhoto/:id', upload.single('avatar'), userController.uploadP
 /** POST /api/v1/user/password - Change password **/
 router.post('/password', validate(paramValidation.changePassword), userController.changePassword);
 
-/** POST /api/v1/user - Get list of users **/
+/** POST /api/v1/user - Admin get users list **/
 router.post('/', validate(paramValidation.getUsersList), userController.adminGetUsersList);
 
-/** POST /api/v1/user/admin/:id - Admin edit user data **/
+/** POST /api/v1/user/admin/:id - Admin edit user status **/
 router.post('/admin/:id', validate(paramValidation.adminEditUser), userController.adminEditUser);
 
 export default router;

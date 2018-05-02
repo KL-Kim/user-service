@@ -84,6 +84,16 @@ export default {
 		}
 	},
 
+	/** POST /api/v1/user/favor/:id - Add or delete favorite business **/
+	"operateFavor": {
+		"params": {
+			id: Joi.string().hex().required(),
+		},
+		"body": {
+			bid: Joi.string().hex().required(),
+		}
+	},
+
 	/** POST /api/v1/user/phone/:id **/
 	"updateUserPhone": {
 		"params": {

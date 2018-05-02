@@ -1,5 +1,5 @@
 import Promise from 'bluebird';
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import httpStatus from 'http-status';
 import bcrypt from 'bcrypt';
 import _ from 'lodash';
@@ -12,7 +12,7 @@ const saltRounds = 12;
 /**
  * User mongoose schema
  */
-const UserSchema = new mongoose.Schema({
+const UserSchema = new Schema({
 	"username": {
 		type: String,
 		required: true,
@@ -97,26 +97,16 @@ const UserSchema = new mongoose.Schema({
 		default: 'normal',
 	},
 	"following": [{
-		id: {
-			type: String,
-		},
-		username: {
-			type: String
-		},
-		profilePhotoUri: {
-			type: String
-		}
+		type: Schema.Types.ObjectId,
+		ref: 'User'
 	}],
 	"followers": [{
-		id: {
-			type: String,
-		},
-		username: {
-			type: String
-		},
-		profilePhotoUri: {
-			type: String
-		}
+		type: Schema.Types.ObjectId,
+		ref: 'User'
+	}],
+	"favors": [{
+		type: Schema.Types.ObjectId,
+		ref: 'Business'
 	}],
 	"interestedIn":[{
 		type: String,
@@ -124,6 +114,9 @@ const UserSchema = new mongoose.Schema({
 	"profilePhotoUri": {
 		type: String,
 		default: ''
+	},
+	"activeCity": {
+		type: Number,
 	},
 	"lastLogin": [{
 		agent: {

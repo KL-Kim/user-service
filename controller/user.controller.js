@@ -262,6 +262,39 @@ class UserController extends BaseController {
 	}
 
 	/**
+	 * Add or delete user's favorite business
+	 * @role *
+	 * @param {string} req.params.id - User's id
+	 * @property {string} req.body.bid - Business id
+	 */
+	operateFavor(req, res, next) {
+		UserController.authenticate(req, res, next)
+			.then((user) => {
+				if (req.params.id !== user._id.toString()) {
+					let error = new APIError("Forbidden", httpStatus.FORBIDDEN);
+					return next(error);
+				}
+
+				const bid = req.body.bid;
+				const index = user.favors.indexOf(bid);
+
+				if (index > -1) {
+					user.favors.splice(index, 1);
+				} else {
+					user.favors.push(bid);
+				}
+
+				return user.save();
+			})
+			.then(user => {
+				return res.json(UserController.getFilteredUser(user));
+			})
+			.catch(err => {
+				return next(err);
+			});
+	}
+
+	/**
 	 * Upload user's profile photo
 	 * @role admin, regular user ownself
 	 * @param {string} req.params.id - User's id
