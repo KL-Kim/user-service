@@ -47,8 +47,11 @@ router.get('/:id', validate(paramValidation.getSingleUser), userController.getSi
 /** PUT /api/v1/user/:id - Update user profile info **/
 router.put('/:id', validate(paramValidation.updateUser), userController.updateUserProfile);
 
+/** GET /api/v1/user/username/:name - Get user by username **/
+router.get('/username/:name', validate(paramValidation.getUserByUsername), userController.getUserByUsername);
+
 /** PUT /api/v1/user/username/:id - Update username **/
-router.put('/useranme/:id', validate(paramValidation.updateUsername), userController.updateUsername);
+router.put('/username/:id', validate(paramValidation.updateUsername), userController.updateUsername);
 
 /** POST /api/v1/user/favor/:id - Add or delete favorite business **/
 router.post('/favor/:id', validate(paramValidation.operateFavor), userController.operateFavor);

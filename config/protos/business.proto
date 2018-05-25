@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+option objc_class_prefix = "BUSINESS";
+
+package business;
+
+// Business service definition.
+service BusinessService {
+  rpc addReview (review) returns (business) {}
+
+  rpc updateReview (updatedReview) returns (business) {}
+
+  rpc deleteReview (review) returns (business) {}
+
+  rpc addToFavoredUser (favorItem) returns (business) {}
+
+  rpc removeFromFavoredUser (favorItem) returns (business) {}
+}
+
+message review {
+  required string bid = 1;
+  required string rid = 2;
+  required int32 rating = 3;
+}
+
+message updatedReview {
+  required string bid = 1;
+  required string rid = 2;
+  required int32 difference = 3;
+}
+
+message business {
+  required string businessId = 1;
+}
+
+message favorItem {
+  required string uid = 1;
+  required string bid = 2;
+}

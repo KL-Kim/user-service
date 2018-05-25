@@ -31,6 +31,13 @@ export default {
 		}
 	},
 
+	/** GET /api/v1/user/username/:name - Get user by username **/
+	"getUserByUsername": {
+		"params": {
+			"name": Joi.string().trim().required()
+		}
+	},
+
 	/** POST /api/v1/user/ **/
 	"getUsersList": {
 		"params": {

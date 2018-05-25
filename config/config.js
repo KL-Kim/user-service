@@ -26,6 +26,9 @@ function setConfig() {
 		MONGO_HOST: Joi.string().default('localhost'),
 		MONGO_PORTS: Joi.number().default(27017),
 
+		BUSINESS_GRPC_HOST: Joi.string().default('localhost'),
+		BUSINESS_GRPC_PORTL: Joi.number().default(50051),
+
 		WEB_SERVICE_HOST: Joi.string().required(),
 		WEB_SERVICE_PORT: Joi.number().default(80),
 
@@ -61,6 +64,10 @@ function setConfig() {
 			accountVerifyUrl: envVars.WEB_SERVICE_HOST + ':' + envVars.WEB_SERVICE_PORT + '/verify/',
 			changePasswordUrl: envVars.WEB_SERVICE_HOST + ':' + envVars.WEB_SERVICE_PORT + '/change-password/',
 		},
+		businessGrpcServer: {
+			host: envVars.BUSINESS_GRPC_HOST,
+			port: envVars.BUSINESS_GRPC_PORT,
+		},
 		// sessionSecret: envVars.SESSION_SECRET,
 		refreshTokenCookieKey: envVars.REFRESH_JWT_COOKIE_KEY,
 		refreshTokenOptions: {
@@ -86,6 +93,9 @@ function setConfig() {
 		config.refreshTokenPublicKey = fs.readFileSync(__dirname + '/secret/refresh.jwt.cert.pem', 'utf8');
 		config.accessTokenPrivateKey = fs.readFileSync(__dirname + '/secret/access.jwt.key.pem', 'utf8');
 		config.accessTokenPublicKey = fs.readFileSync(__dirname + '/secret/access.jwt.cert.pem', 'utf8');
+		config.rootCert = fs.readFileSync(__dirname + '/../config/secret/out/MY_ROOT_CA.crt'),
+		config.grpcPrivateKey = fs.readFileSync(__dirname + '/../config/secret/out/new.127.0.0.1.key'),
+		config.grpcPublicKey = fs.readFileSync(__dirname + '/../config/secret/out/127.0.0.1.crt')
 	} catch(err) {
 		throw err;
 	}

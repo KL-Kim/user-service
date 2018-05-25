@@ -6,14 +6,16 @@
 
 const grants = {
 	guest: {
-		user: {
+		account: {
 			"create:own": ["email", "password"],
+			"read:any": ["username", "firstName", "lastName", "gender", "birthday", "profilePhotoUri", "favors", "interestedIn"],
 		},
 	},
 	regular: {
 		account: {
 			"read:own": ["*", "!password", "!role", "!createdAt", "!userStatus", "!lastLogin", "!point"],
-			"update:own": ["firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
+			"read:any": ["username", "firstName", "lastName", "gender", "birthday", "profilePhotoUri", "favors", "interestedIn"],
+			"update:own": ["username", "firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
 		},
 		reviews: {
 			"read:any": ["*"],

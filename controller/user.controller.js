@@ -1,5 +1,6 @@
 import Promise from 'bluebird';
 import passport from 'passport';
+import grpc from 'grpc';
 import httpStatus from 'http-status';
 import crypto from 'crypto';
 import ms from 'ms';
@@ -16,6 +17,7 @@ import grants from '../config/rbac.config';
 import User from '../models/user.model';
 import VerificationCode from '../models/code.model';
 import config from '../config/config';
+import businessProto from '../config/grpc.client';
 
 class UserController extends BaseController {
 	constructor() {
@@ -24,6 +26,18 @@ class UserController extends BaseController {
 		this._jwtManager = new JwtManager();
 		this._mailManager = new MailManager();
 		this._ac = new AccessControl(grants);
+		this._grpcClient = new businessProto.BusinessService(
+      config.businessGrpcServer.host + ':' + config.businessGrpcServer.port,
+      grpc.credentials.createSsl(
+        config.rootCert,
+        config.grpcPrivateKey,
+        config.grpcPublicKey,
+      ),
+      {
+        'grpc.ssl_target_name_override' : 'ikoreatown.net',
+        'grpc.default_authority': 'ikoreatown.net'
+      }
+    );
 	}
 
 	/**
@@ -75,12 +89,34 @@ class UserController extends BaseController {
 				if (req.user.role === 'admin' || req.user.role === 'god') {
 					filteredUser = user;
 				} else {
-					filteredUser = UserController.getFilteredUser(user)
+					filteredUser = UserController.filterUserData(user)
 				}
 
 				return res.json(filteredUser);
 			})
 			.catch((err) => {
+				return next(err);
+			});
+	}
+
+	/**
+	 * Get user by username
+	 * @property {String} name - User's username
+	 */
+	getUserByUsername(req, res, next) {
+		User.getByUsername(req.params.name)
+			.then(user => {
+				if (_.isEmpty(user)) throw new APIError("Not found", httpStatus.NOT_FOUND);
+
+				const ac = new AccessControl(grants);
+
+				let permission = ac.can("guest").readAny("account");
+
+				return res.json({
+					user: permission.filter(user.toJSON()),
+				});
+			})
+			.catch(err => {
 				return next(err);
 			});
 	}
@@ -155,7 +191,7 @@ class UserController extends BaseController {
 			}).then(response => {
 				if (response) {
 					return res.status(201).json({
-						"user": UserController.getFilteredUser(req.user),
+						"user": UserController.filterUserData(req.user),
 						"token": req.accessToken,
 					});
 				} else {
@@ -184,7 +220,7 @@ class UserController extends BaseController {
 					return user.save();
 				}
 			}).then(user => {
-	 			return res.json(UserController.getFilteredUser(user));
+	 			return res.json(UserController.filterUserData(user));
 	 		}).catch(err => {
 	 			return next(err);
 	 		});
@@ -225,7 +261,7 @@ class UserController extends BaseController {
 				return User.getById(req.params.id);
 			})
 			.then(user => {
-				return res.json(UserController.getFilteredUser(user));
+				return res.json(UserController.filterUserData(user));
 			}).catch((err) => {
 				return next(err);
 			});
@@ -255,14 +291,14 @@ class UserController extends BaseController {
 					return user.save();
 				});
 			}).then(user => {
-				return res.json(UserController.getFilteredUser(user));
+				return res.json(UserController.filterUserData(user));
 			}).catch((err) => {
 				return next(err);
 			});
 	}
 
 	/**
-	 * Add or delete user's favorite business
+	 * Add or remove user's favorite business
 	 * @role *
 	 * @param {string} req.params.id - User's id
 	 * @property {string} req.body.bid - Business id
@@ -280,14 +316,40 @@ class UserController extends BaseController {
 
 				if (index > -1) {
 					user.favors.splice(index, 1);
+
+					return new Promise((resolve, reject) => {
+						this._grpcClient.removeFromFavoredUser({
+							bid: bid,
+							uid: user._id.toString(),
+						}, (err, response) => {
+							if (err) return reject(err);
+
+							return resolve(user);
+						});
+					});
+
 				} else {
 					user.favors.push(bid);
+
+					return new Promise((resolve, reject) => {
+						this._grpcClient.addToFavoredUser({
+							bid: bid,
+							uid: user._id.toString(),
+						}, (err, response) => {
+							if (err) return reject(err);
+
+							return resolve(user);
+						});
+					});
 				}
 
 				return user.save();
 			})
 			.then(user => {
-				return res.json(UserController.getFilteredUser(user));
+				return user.save();
+			})
+			.then(user => {
+				return res.json(UserController.filterUserData(user));
 			})
 			.catch(err => {
 				return next(err);
@@ -314,7 +376,7 @@ class UserController extends BaseController {
 				return user.save();
 			})
 			.then(user => {
-				return res.json(UserController.getFilteredUser(user));
+				return res.json(UserController.filterUserData(user));
 			})
 			.catch((err) => {
 				return next(err);
@@ -358,7 +420,7 @@ class UserController extends BaseController {
 				})
 			})
 			.then(user => {
-				return res.json(UserController.getFilteredUser(user));
+				return res.json(UserController.filterUserData(user));
 			}).catch((err) => {
 				return next(err);
 			});
@@ -482,9 +544,9 @@ class UserController extends BaseController {
 	}
 
 	/**
-	 * Get filtered user data
+	 * Filter user data
 	 */
-	static getFilteredUser(user) {
+	static filterUserData(user) {
 		let permission;
 
 		const ac = new AccessControl(grants);

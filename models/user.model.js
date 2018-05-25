@@ -162,7 +162,7 @@ UserSchema.virtual('id')
 	.get(function() { return this._id });
 
 /**
- * Pre-save hooks
+ * Middleware
  */
 UserSchema.pre('save', function(next) {
 	let user = this;
