@@ -91,7 +91,7 @@ const accessTokenOptions = {
 	},
 };
 
-passport.use('access-token', new JwtStrategy(accessTokenOptions, (payload, done) =>{
+passport.use('access-token', new JwtStrategy(accessTokenOptions, (payload, done) => {
 	User.getById(payload.uid).then((user) => {
 		if (user) {
 			return done(null, user, false);

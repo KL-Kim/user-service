@@ -47,7 +47,7 @@ export default {
 			limit: Joi.number(),
 			skip: Joi.number(),
 			filter: {
-				"role": Joi.array().items(Joi.string().valid(['regular', 'manager', 'admin'])),
+				"role": Joi.array().items(Joi.string().valid(['regular', 'owner', 'writer', 'manager', 'admin'])),
 				"userStatus": Joi.array().items(Joi.string().valid(['normal', 'suspended'])),
 			},
 		}
@@ -130,7 +130,13 @@ export default {
 	"changePassword": {
 		"body": {
 			password: Joi.string().min(8).strip().required(),
-			passwordConfirmation: Joi.any().valid(Joi.ref('password')).options({ language: { any: { allowOnly: 'Passwords do not match' } } }).required(),
+			passwordConfirmation: Joi.any().valid(Joi.ref('password')).options({
+				language: {
+					any: {
+						allowOnly: 'Passwords do not match'
+					}
+				}
+			}).required(),
 		}
 	},
 
@@ -140,7 +146,7 @@ export default {
 			id: Joi.string().hex().required(),
 		},
 		"body": {
-			role: Joi.string().valid(['regular', 'manager', 'admin']),
+			role: Joi.string().valid(['regular', 'owner', 'writer', 'manager', 'admin']),
 			userStatus: Joi.string().valid(['normal', 'suspended']),
 		},
 	}

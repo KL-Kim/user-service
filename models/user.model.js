@@ -134,7 +134,7 @@ const UserSchema = new Schema({
 		type: String,
 		required: true,
 		default: 'regular',
-		enum: ['god', 'admin', 'manager', 'regular']
+		enum: ['god', 'admin', 'manager', 'writer', 'owner', 'regular']
 	},
 	"userStatus": {
 		type: String,

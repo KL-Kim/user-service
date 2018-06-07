@@ -13,6 +13,7 @@ let admin = new User({
 	email: 'jinguanglong11@icloud.com',
 	password: 'asdfasdf',
 	role: 'admin',
+	isVerified: true,
 });
 
 admin.save();
@@ -22,6 +23,7 @@ let manager = new User({
 	email: 'jinguanglong11@gmail.com',
 	password: 'asdfasdf',
 	role: 'manager',
+	isVerified: true,
 });
 
 manager.save();
@@ -31,6 +33,7 @@ let regular = new User({
 	email: 'jinguanglong11@hotmail.com',
 	password: 'asdfasdf',
 	role: 'regular',
+	isVerified: true,
 });
 
 regular.save();

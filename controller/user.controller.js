@@ -1,4 +1,4 @@
-import Promise from 'bluebird';
+ import Promise from 'bluebird';
 import passport from 'passport';
 import grpc from 'grpc';
 import httpStatus from 'http-status';
