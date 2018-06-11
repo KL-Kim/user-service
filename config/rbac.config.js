@@ -18,16 +18,16 @@ const grants = {
 			"update:own": ["username", "firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
 		},
 	},
-	"owner": {
+	"businessOwner": {
 		account: {
-			"read:own": ["*", "!password", "!role", "!createdAt", "!userStatus", "!lastLogin"],
+			"read:own": ["*", "!password", "!createdAt", "!userStatus", "!lastLogin"],
 			"read:any": ["username", "firstName", "lastName", "gender", "birthday", "profilePhotoUri", "favors", "interestedIn"],
 			"update:own": ["username", "firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
 		},
 	},
 	"writer": {
 		account: {
-			"read:own": ["*", "!password", "!role", "!createdAt", "!userStatus", "!lastLogin"],
+			"read:own": ["*", "!password", "!createdAt", "!userStatus", "!lastLogin"],
 			"read:any": ["username", "firstName", "lastName", "gender", "birthday", "profilePhotoUri", "favors", "interestedIn"],
 			"update:own": ["username", "firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
 		},
