@@ -1,7 +1,11 @@
 /**
  * Json Web Token Manager
+ *
  * @export {Class}
  * @version 0.0.1
+ *
+ * @author KL-Kim (https://github.com/KL-Kim)
+ * @license MIT
  */
 
 import httpStatus from 'http-status';

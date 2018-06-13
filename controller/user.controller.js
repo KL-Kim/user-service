@@ -1,4 +1,14 @@
- import Promise from 'bluebird';
+/**
+ * User controller
+ *
+ * @export {Class}
+ * @version 0.0.1
+ *
+ * @author KL-Kim (https://github.com/KL-Kim)
+ * @license MIT
+ */
+
+import Promise from 'bluebird';
 import passport from 'passport';
 import grpc from 'grpc';
 import httpStatus from 'http-status';
@@ -42,7 +52,8 @@ class UserController extends BaseController {
 
 	/**
 	 * Get single user by id
-	 * @role admin, regular user ownself
+	 * @role - *
+   * @since 0.0.1
 	 * @property {OjectId} req.params.id - user's id in url path
 	 * @property {String} req.query.by - Who get user info,
 	 * @returns {User}
@@ -101,7 +112,10 @@ class UserController extends BaseController {
 
 	/**
 	 * Get user by username
+   * @role - *
+   * @since 0.0.1
 	 * @property {String} name - User's username
+   * @returns {User}
 	 */
 	getUserByUsername(req, res, next) {
 		User.getByUsername(req.params.name)
@@ -123,10 +137,11 @@ class UserController extends BaseController {
 
 	/**
 	 * Create new user
-	 * @role *
+	 * @role - *
+   * @since 0.0.1
 	 * @property {string} req.body.password - user password
 	 * @property {string} req.body.passwordConfirmation - user password confirmation
-	 * @return {Object<User, token>}
+	 * @returns {User, token}
 	 */
 	registerNewUser(req, res, next) {
 		if (req.body.password !== req.body.passwordConfirmation)
@@ -206,8 +221,9 @@ class UserController extends BaseController {
 
 	/**
 	 * Verify account
-	 * @role *
-	 * @returns {none}
+	 * @role - *
+   * @since 0.0.1
+	 * @returns {User}
 	 */
 	accountVerification(req, res, next) {
 		// Check jwt token, and account is verified if sign is true.
@@ -219,7 +235,8 @@ class UserController extends BaseController {
 					user.isVerified = true;
 					return user.save();
 				}
-			}).then(user => {
+			})
+      .then(user => {
 	 			return res.json(UserController.filterUserData(user));
 	 		}).catch(err => {
 	 			return next(err);
@@ -228,14 +245,15 @@ class UserController extends BaseController {
 
 	/**
 	 * Update user's profile
-	 * @role *
+	 * @role - *
+   * @since 0.0.1
 	 * @param {string} req.params.id - User's id
 	 * @property {string} req.body.firstName - User first name
 	 * @property {string} req.body.lastName - User last name
 	 * @property {string} req.body.gender - User gender
 	 * @property {string} req.body.address - User address
 	 * @property {string} req.body.birthday - User birthday
-	 * @return {Object<User>}
+	 * @returns {User}
 	 */
 	updateUserProfile(req, res, next) {
 		UserController.authenticate(req, res, next)
@@ -269,28 +287,26 @@ class UserController extends BaseController {
 
 	/**
 	 * Update user's username
-	 * @role *
+	 * @role - *
+   * @since 0.0.1
 	 * @param {string} req.params.id - User's id
 	 * @property {string} req.body.username - User's username
-	 * @return {Object<User>}
+	 * @returns {User}
 	 */
 	updateUsername(req, res, next) {
 		UserController.authenticate(req, res, next)
-			.then((user) => {
-				if (req.params.id !== user._id.toString()) {
-					let error = new APIError("Forbidden", httpStatus.FORBIDDEN);
-					return next(error);
-				}
+			.then(user => {
+				if (req.params.id !== user._id.toString()) throw new APIError("Forbidden", httpStatus.FORBIDDEN);
 
-				return User.getByUsername(req.body.username).then(newUser => {
-					if (newUser) {
-						const error = new APIError("The username already exists", httpStatus.CONFLICT);
-						return next(error);
-					}
-					user.username = req.body.username;
-					return user.save();
-				});
-			}).then(user => {
+			  return User.getByUsername(req.body.username);
+			})
+      .then(newUser => {
+        if (newUser) throw new APIError("The username already exists", httpStatus.CONFLICT);
+
+        user.username = req.body.username;
+        return user.save();
+      })
+      .then(user => {
 				return res.json(UserController.filterUserData(user));
 			}).catch((err) => {
 				return next(err);
@@ -299,9 +315,11 @@ class UserController extends BaseController {
 
 	/**
 	 * Add or remove user's favorite business
-	 * @role *
+	 * @role - *
+   * @since 0.0.1
 	 * @param {string} req.params.id - User's id
 	 * @property {string} req.body.bid - Business id
+   * @returns {User}
 	 */
 	operateFavor(req, res, next) {
 		UserController.authenticate(req, res, next)
@@ -358,10 +376,11 @@ class UserController extends BaseController {
 
 	/**
 	 * Upload user's profile photo
-	 * @role admin, regular user ownself
+	 * @role - *
+   * @since 0.0.1
 	 * @param {string} req.params.id - User's id
 	 * @property {file} req.file - Image file
-	 * @return {Object<User>}
+	 * @returns {User}
 	 */
 	uploadProfilePhoto(req, res, next) {
 		UserController.authenticate(req, res, next)
@@ -385,11 +404,12 @@ class UserController extends BaseController {
 
 	/**
 	 * Upload user's mobile phone number
-	 * @role admin, regular user ownself
+	 * @role - *
+   * @since 0.0.1
 	 * @param {string} req.params.id - User's id
 	 * @property {string} req.body.phoneNumber - User's phone number
 	 * @property {number} req.body.code - Phone verification code
-	 * @return {Object<User>}
+	 * @returns {User}
 	 */
 	updateUserPhone(req, res, next) {
 		UserController.authenticate(req, res, next)
@@ -428,8 +448,10 @@ class UserController extends BaseController {
 
 	/**
 	 * Change password
+   * @since 0.0.1
 	 * @property {string} req.body.password - User's new password
 	 * @property {string} req.body.passwordConfirmation - Password confirmation
+   * @returns {void}
 	 */
 	changePassword(req, res, next) {
 		if (req.body.password !== req.body.passwordConfirmation)
@@ -442,7 +464,7 @@ class UserController extends BaseController {
 				return user.update({ "password": req.body.password}, { runValidators: true }).exec();
 			}).then((result) => {
 				if (result.ok)
-					return res.status(204).json(result);
+					return res.status(204).send();
 				else
 					return next(new APIError("Update user failed", httpStatus.INTERNAL_SERVER_ERROR));
 			})
@@ -452,34 +474,42 @@ class UserController extends BaseController {
 	}
 
 	/**
-	 * Get users list
+	 * Get users list by admin
 	 * @role admin
+   * @since 0.0.1
 	 * @property {string} req.query.search - Search user
-	 * @property {number} req.body.skip - Number of users to be skipped.
-	 * @property {number} req.body.limit - Limit number of users to be returned.
-	 * @property {object} req.body.filter - User filter object
-	 * @returns {User[]}
+	 * @property {number} req.query.skip - Number of users to be skipped.
+	 * @property {number} req.query.limit - Limit number of users to be returned.
+	 * @property {object} req.query.filter - User filter object
+	 * @returns {User[], totalCount}
 	 */
-	adminGetUsersList(req, res, next) {
-		const { limit = 20, skip = 0, filter } = req.body;
-		const search = req.query.search;
-		UserController.authenticate(req, res, next)
-			.then((user) => {
-				const permission = this._ac.can(user.role).readAny('account');
+	getUsersListByAdmin(req, res, next) {
+		const { limit, skip, role, status, search } = req.query;
 
-				if (permission.granted) {
-					return User.filteredCount({ filter, search });
-				} else {
-					throw new APIError("Forbidden", httpStatus.FORBIDDEN);
-				}
+		UserController.authenticate(req, res, next)
+			.then(user => {
+        if (user.role !== 'admin' && user.role !== 'god') throw new APIError("Forbidden", httpStatus.FORBIDDEN);
+
+        return User.getCount({ filter: {
+          role: role,
+          userStatus: status,
+        }, search });
 			})
 			.then(count => {
 				req.count = count;
-				return User.getUsersList({ skip, limit, filter, search });
+				return User.getUsersList({
+          skip,
+          limit,
+          search,
+          filter: {
+            role: role,
+            userStatus: status,
+          },
+         });
 			})
-			.then(users => {
+			.then(list => {
 				return res.json({
-					users: users,
+					users: list,
 					totalCount: req.count,
 				});
 			})
@@ -489,35 +519,30 @@ class UserController extends BaseController {
 	}
 
 	/**
-	 * Admin edit user data
+	 * Edit user's role & status by admin
 	 * @role admin
+   * @since 0.0.1
 	 * @property {string} req.params.id - Users's id
 	 * @property {string} req.body.role - User's role
 	 * @property {string} req.body.userStatus - Users' status
+   * @returns {void}
 	 */
-	adminEditUser(req, res, next) {
+	editUserByAdmin(req, res, next) {
 		UserController.authenticate(req, res, next)
-			.then((user) => {
-				req.permission = this._ac.can(user.role).updateAny('account');
+			.then(user => {
+				if (user.role !== 'admin' && user.role !== 'god') throw new APIError("Forbidden", httpStatus.FORBIDDEN);
 
-				if (req.permission.granted) {
-					return User.getById(req.params.id);
-				} else {
-					throw new APIError("Forbidden", httpStatus.FORBIDDEN);
-				}
+        return User.getById(req.params.id);
 			})
 			.then(user => {
 				if (_.isEmpty(user)) throw new APIError("User do not exists", httpStatus.NOT_FOUND);
 
-				let newUserInfo = req.permission.filter(req.body);
-				return user.update({...newUserInfo}, { runValidators: true }).exec();
+        const { role, userStatus } = req.body;
+
+				return user.update({ role, userStatus }, { runValidators: true }).exec();
 			})
-			.then((result) => {
-				if (result.ok) {
-					return res.status(204).send();
-				} else {
-					throw new APIError("Update user failed", httpStatus.INTERNAL_SERVER_ERROR);
-				}
+			.then(result => {
+				return res.status(204).send();
 			})
 			.catch((err) => {
 				return next(err);
@@ -526,6 +551,7 @@ class UserController extends BaseController {
 
 	/**
 	 * Authenticate User
+   * @since 0.0.1
 	 * @return {Promise<Object, APIError>}
 	 */
 	static authenticate(req, res, next) {
@@ -545,6 +571,9 @@ class UserController extends BaseController {
 
 	/**
 	 * Filter user data
+   * @since 0.0.1
+   * @param {Object} user - User object
+   * @return {User} - filtered user data
 	 */
 	static filterUserData(user) {
 		let permission;

@@ -1,5 +1,7 @@
 /**
  * Business gRPC client
+ *
+ * @version 0.0.1
  */
 import grpc from 'grpc';
 

@@ -1,3 +1,8 @@
+/**
+ * Csp Configuration
+ *
+ * @version 0.0.1
+ */
 import csp from 'helmet-csp';
 
 const cspOptions = {

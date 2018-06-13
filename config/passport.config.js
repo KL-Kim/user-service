@@ -1,7 +1,10 @@
 /**
  * Passport local & Passport jwt Config
- * @export {passport}
+ *
  * @version 0.0.1
+ *
+ * @author KL-Kim (https://github.com/KL-Kim)
+ * @license MIT
  */
 
 import passport from 'passport';
@@ -92,7 +95,7 @@ const accessTokenOptions = {
 };
 
 passport.use('access-token', new JwtStrategy(accessTokenOptions, (payload, done) => {
-	User.getById(payload.uid).then((user) => {
+	User.getById(payload.uid).then(user => {
 		if (user) {
 			return done(null, user, false);
 		} else {

@@ -1,7 +1,10 @@
 /**
  * Parameters Validation Config
- * @export {Object}
+ *
  * @version 0.0.1
+ *
+ * @author KL-Kim (https://github.com/KL-Kim)
+ * @license MIT
  */
 import Joi from 'joi';
 
@@ -18,9 +21,9 @@ export default {
 
 	/** POST /api/v1/auth/login **/
 	"login": {
-		body: {
+		"body": {
 			email: Joi.string().email().required(),
-			password: Joi.string().min(8).strip().required()
+			password: Joi.string().min(8).strip().required(),
 		}
 	},
 
@@ -35,21 +38,6 @@ export default {
 	"getUserByUsername": {
 		"params": {
 			"name": Joi.string().trim().required()
-		}
-	},
-
-	/** POST /api/v1/user/ **/
-	"getUsersList": {
-		"params": {
-			search: Joi.string().trim()
-		},
-		"body": {
-			limit: Joi.number(),
-			skip: Joi.number(),
-			filter: {
-				"role": Joi.array().items(Joi.string().valid(['regular', 'owner', 'writer', 'manager', 'admin'])),
-				"userStatus": Joi.array().items(Joi.string().valid(['normal', 'suspended'])),
-			},
 		}
 	},
 
@@ -140,8 +128,19 @@ export default {
 		}
 	},
 
+	/** POST /api/v1/user/ **/
+	"getUsersListByAdmin": {
+		"query": {
+			limit: Joi.number(),
+			skip: Joi.number(),
+			role: Joi.string().valid(['regular', 'owner', 'writer', 'manager', 'admin']),
+			status: Joi.string().valid(['normal', 'suspended']),
+			search: Joi.string().trim(),
+		}
+	},
+
 	/** POST /api/v1/user/admin/:id **/
-	"adminEditUser": {
+	"editUserByAdmin": {
 		"params": {
 			id: Joi.string().hex().required(),
 		},

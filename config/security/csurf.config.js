@@ -1,5 +1,7 @@
 /**
  * CSRF Protection
+ *
+ * @version 0.0.1
  */
 import csurf from 'csurf';
 

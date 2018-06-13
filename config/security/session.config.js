@@ -1,7 +1,7 @@
 /**
  * Session Config
+ *
  * @export {Session}
- * @deprecated true
  * @version 0.0.1
  */
 
@@ -54,4 +54,3 @@ const sessionOptions = {
 };
 
 export default session(sessionOptions);
-

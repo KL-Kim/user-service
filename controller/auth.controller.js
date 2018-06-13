@@ -1,3 +1,13 @@
+/**
+ * Authenticate controller
+ *
+ * @export {Class}
+ * @version 0.0.1
+ *
+ * @author KL-Kim (https://github.com/KL-Kim)
+ * @license MIT
+ */
+
 import passport from 'passport';
 import httpStatus from 'http-status';
 import ms from 'ms';
@@ -26,15 +36,17 @@ class AuthController extends BaseController {
 
 	/**
 	 * Issue access Token
+	 * @role - *
+	 * @since 0.0.1
 	 * @returns {token}
 	 */
 	issueAccessToken(req, res, next) {
 		const that = this;
-		passport.authenticate('refresh-token', { session: false }, (err, result, info) => {
+		passport.authenticate('refresh-token', { session: false }, (err, payload, info) => {
 			if (err) return next(err);
 			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
-			that._jwtManager.signToken('ACCESS', result.user.id, result.user.role, result.user.isVerified).then((token) => {
+			that._jwtManager.signToken('ACCESS', payload.user.id, payload.user.role, payload.user.isVerified).then((token) => {
 				return res.json({
 					"token": token,
 				});
@@ -45,12 +57,13 @@ class AuthController extends BaseController {
 	}
 
 	/**
- 		* User login and return a token
- 		* @role *
-		* @property {string} req.body.email - Users' Email
-		* @property {string} req.body.password - User's account password
- 		* @returns {User, token}
- 		*/
+ 	 * User login and return a token
+ 	 * @role - *
+	 * @since 0.0.1
+	 * @property {string} req.body.email - Users' Email
+	 * @property {string} req.body.password - User's account password
+ 	 * @returns {User, token}
+ 	 */
 	login(req, res, next) {
 		const that = this;
 		passport.authenticate('local-login', { session: false }, (err, user, info) => {
@@ -105,20 +118,21 @@ class AuthController extends BaseController {
 
 	/**
 	 * User log out and revoke token
-	 * @role *
-	 * @returns {object}
+	 * @role - *
+	 * @since 0.0.1
+	 * @returns {void}
 	 */
 	logout(req, res, next) {
 		const that = this;
-		passport.authenticate('refresh-token', { session: false }, (err, result, info) => {
+		passport.authenticate('refresh-token', { session: false }, (err, payload, info) => {
 			if (err) return next(err);
 			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
-			if (result) {
-				that._jwtManager.revokeRefreshToken(result.payload.tid)
+			if (payload) {
+				that._jwtManager.revokeRefreshToken(payload.payload.tid)
 				.then((revokeToken) => {
 					if (revokeToken)
-						return res.status(204).json({status: 'ok'});
+						return res.status(204).send();
 				}).catch((err) => {
 					return next(err);
 				});
@@ -128,7 +142,10 @@ class AuthController extends BaseController {
 
 	/**
 	 * Send change password email
+	 * @role - *
+	 * @since 0.0.1
 	 * @property {string} req.params.email - User email
+	 * @returns {void}
 	 */
 	sendChangePasswordEmail(req, res, next) {
 		const email = req.params.email;
@@ -145,7 +162,7 @@ class AuthController extends BaseController {
 					return this._mailManager.sendChangePassword(user, accessToken);
 				}).then(response => {
 					if (response) {
-						return res.status(204).json();
+						return res.status(204).send();
 					}
 				})
 				.catch(err => {
@@ -161,7 +178,10 @@ class AuthController extends BaseController {
 
 	/**
 	 * Send account verification email
+	 * @role - *
+	 * @since 0.0.1
 	 * @property {string} req.params.email - User email
+	 * @returns {void}
 	 */
 	sendAccountVerificationEmail(req, res, next) {
 		const email = req.params.email;
@@ -178,7 +198,7 @@ class AuthController extends BaseController {
 					return this._mailManager.sendEmailVerification(user, accessToken);
 				}).then(response => {
 					if (response) {
-						return res.status(204).json();
+						return res.status(204).send();
 					}
 				})
 				.catch(err => {
@@ -193,8 +213,10 @@ class AuthController extends BaseController {
 
 	/**
 	 * Send Phone verification code
-	 * @role *
+	 * @role - *
+	 * @since 0.0.1
 	 * @param {String} req.params.phoneNumber - User's phone number
+	 * @returns {void}
 	 */
 	sendPhoneVerificationCode(req, res, next) {
 		// Check mobile phone format
@@ -243,7 +265,7 @@ class AuthController extends BaseController {
 			// });
 		}).then(response => {
 			if (response.Code === 'OK') {
-				return res.status(204).json();
+				return res.status(204).send();
 			} else {
 				const error = new APIError("Send SMS failed");
 				return next(error);

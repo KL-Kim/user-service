@@ -1,7 +1,10 @@
 /**
  * Mail Manager
+
  * @export {Class}
+ * @author KL-Kim (github.com/KL-Kim)
  * @version 0.0.1
+ * @license MIT
  */
 
 import Promise from 'bluebird';

@@ -1,9 +1,10 @@
-import httpStatus from 'http-status';
-
 /**
  * @extends Error
  * @version 0.0.1
  */
+
+import httpStatus from 'http-status';
+
 class ExtendableError extends Error {
   constructor(message, status, isPublic) {
     super(message);

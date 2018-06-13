@@ -1,8 +1,14 @@
+/**
+ * Phone verification code mongoose schema
+ *
+ * @version 0.0.1
+ *
+ * @author KL-Kim (https://github.com/KL-Kim)
+ * @license MIT
+ */
+
 import mongoose from 'mongoose';
 
-/**
- * Verification code mongoose schema
- */
 const CodeSchema = new mongoose.Schema({
   "code": {
     type: String,

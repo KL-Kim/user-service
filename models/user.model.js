@@ -1,3 +1,12 @@
+/**
+ * User Model
+ *
+ * @version 0.0.1
+ *
+ * @author KL-Kim (https://github.com/KL-Kim)
+ * @license MIT
+ */
+
 import Promise from 'bluebird';
 import mongoose, { Schema } from 'mongoose';
 import httpStatus from 'http-status';
@@ -253,7 +262,7 @@ UserSchema.statics = {
 	 * @returns {Promise<User>}
 	 */
 	getByEmail(email) {
-		return this.findOne({ email: email }).exec();
+		return this.findOne({ "email": email }).exec();
 	},
 
 	/**
@@ -279,7 +288,7 @@ UserSchema.statics = {
 			roleCondition,
 			statusCondition;
 
-		if (!_.isEmpty(filter.role) && filter.role) {
+		if (filter.role) {
 			roleCondition = {
 				"role": {
 					"$in": filter.role
@@ -287,7 +296,7 @@ UserSchema.statics = {
 			}
 		}
 
-		if (!_.isEmpty(filter.userStatus) && filter.userStatus) {
+		if (filter.userStatus) {
 			statusCondition = {
 				"userStatus": {
 					"$in": filter.userStatus
@@ -333,7 +342,7 @@ UserSchema.statics = {
 	 * Count of filtered users
 	 * @param {object} filter - Filter users list
 	 */
-	filteredCount({ filter = {}, search } = {}) {
+	getCount({ filter = {}, search } = {}) {
 		let conditions,
 			searchCondition,
 			roleCondition,

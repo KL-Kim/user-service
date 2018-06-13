@@ -11,7 +11,7 @@ validate.options({
   allowUnknownBody: false,
   allowUnknownHeaders: true,
   allowUnknownQuery: true,
-  allowUnknownParams: true,
+  allowUnknownParams: false,
   allowUnknownCookies: true
 });
 
@@ -42,10 +42,10 @@ router.post('/register', validate(paramValidation.register), userController.regi
 router.get('/verify', userController.accountVerification);
 
 /** GET /api/v1/user/:id - Get signle user data **/
-router.get('/:id', validate(paramValidation.getSingleUser), userController.getSingleUser);
+router.get('/single/:id', validate(paramValidation.getSingleUser), userController.getSingleUser);
 
 /** PUT /api/v1/user/:id - Update user profile info **/
-router.put('/:id', validate(paramValidation.updateUser), userController.updateUserProfile);
+router.put('/single/:id', validate(paramValidation.updateUser), userController.updateUserProfile);
 
 /** GET /api/v1/user/username/:name - Get user by username **/
 router.get('/username/:name', validate(paramValidation.getUserByUsername), userController.getUserByUsername);
@@ -65,10 +65,10 @@ router.post('/profilePhoto/:id', upload.single('avatar'), userController.uploadP
 /** POST /api/v1/user/password - Change password **/
 router.post('/password', validate(paramValidation.changePassword), userController.changePassword);
 
-/** POST /api/v1/user - Admin get users list **/
-router.post('/', validate(paramValidation.getUsersList), userController.adminGetUsersList);
+/** GET /api/v1/user - Admin get users list **/
+router.get('/admin', validate(paramValidation.getUsersListByAdmin), userController.getUsersListByAdmin);
 
 /** POST /api/v1/user/admin/:id - Admin edit user status **/
-router.post('/admin/:id', validate(paramValidation.adminEditUser), userController.adminEditUser);
+router.post('/admin/:id', validate(paramValidation.editUserByAdmin), userController.editUserByAdmin);
 
 export default router;

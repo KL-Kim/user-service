@@ -1,3 +1,10 @@
+/**
+ * Express Configuration
+ *
+ * @export {Express Object}
+ * @version 0.0.1
+ */
+
 import Promise from 'bluebird';
 import Express from 'express';
 import compression from 'compression';

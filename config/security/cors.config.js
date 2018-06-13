@@ -1,5 +1,7 @@
 /**
  * Cross-Origin Resource Sharing Configuration
+ *
+ * @version 0.0.1
  */
 import cors from 'cors';
 
