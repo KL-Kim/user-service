@@ -73,7 +73,7 @@ class UserController extends BaseController {
 					isOwn = true;
 					permission = this._ac.can(user.role).readOwn('account');
 				} else {
-					if (req.user.role === 'admin' || req.user.role === 'god') {
+					if (req.user.role === 'manager' || req.user.role === 'admin' || req.user.role === 'god') {
 						isOwn = false;
 						permission = this._ac.can(user.role).readAny('account');
 
@@ -488,7 +488,7 @@ class UserController extends BaseController {
 
 		UserController.authenticate(req, res, next)
 			.then(user => {
-        if (user.role !== 'admin' && user.role !== 'god') throw new APIError("Forbidden", httpStatus.FORBIDDEN);
+        if (user.role !== 'manager' && user.role !== 'admin' && user.role !== 'god') throw new APIError("Forbidden", httpStatus.FORBIDDEN);
 
         return User.getCount({ filter: {
           role: role,
