@@ -27,8 +27,9 @@ const UserSchema = new Schema({
 		required: true,
 		trim: true,
 		unique: true,
+		index: true,
 		minLength: [4, 'The value of path `{PATH}` (`{VALUE}`) is shorter than the minimum allowed length ({MINLENGTH}).'],
-		maxLength: [30, 'The value of path `{PATH}` (`{VALUE}`) is longer than the maximum allowed length ({MINLENGTH}).'],
+		maxLength: [30, 'The value of path `{PATH}` (`{VALUE}`) is longer than the maximum allowed length ({MAXLENGTH}).'],
 	},
 	"email": {
 		type: String,
@@ -152,16 +153,9 @@ const UserSchema = new Schema({
 	},
 	"createdAt": {
 		type: Date,
-		default: Date.now
+		default: Date.now,
+		index: true
 	},
-});
-
-/**
- * Index
- */
-UserSchema.index({
-	username: 'text',
-	email: 'text'
 });
 
 /**

@@ -6,6 +6,7 @@
  * @author KL-Kim (https://github.com/KL-Kim)
  * @license MIT
  */
+ 
 import Joi from 'joi';
 
 export default {
@@ -28,7 +29,7 @@ export default {
 	},
 
 	/** GET /api/v1/user/:id **/
-	"getSingleUser": {
+	"getMyself": {
 		"params": {
 			id: Joi.string().hex().required()
 		}
@@ -136,6 +137,13 @@ export default {
 			role: Joi.string().valid(['regular', 'owner', 'writer', 'manager', 'admin']),
 			status: Joi.string().valid(['normal', 'suspended']),
 			search: Joi.string().trim(),
+		}
+	},
+
+	/** GET /api/v1/user/admin/:id - Admin get single user **/
+	"getSingleUserByAdmin": {
+		"params": {
+			id: Joi.string().hex().required()
 		}
 	},
 

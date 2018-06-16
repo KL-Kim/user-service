@@ -42,7 +42,7 @@ router.post('/register', validate(paramValidation.register), userController.regi
 router.get('/verify', userController.accountVerification);
 
 /** GET /api/v1/user/:id - Get signle user data **/
-router.get('/single/:id', validate(paramValidation.getSingleUser), userController.getSingleUser);
+router.get('/single/:id', validate(paramValidation.getMyself), userController.getMyself);
 
 /** PUT /api/v1/user/:id - Update user profile info **/
 router.put('/single/:id', validate(paramValidation.updateUser), userController.updateUserProfile);
@@ -67,6 +67,9 @@ router.post('/password', validate(paramValidation.changePassword), userControlle
 
 /** GET /api/v1/user - Admin get users list **/
 router.get('/admin', validate(paramValidation.getUsersListByAdmin), userController.getUsersListByAdmin);
+
+/** GET /api/v1/user/admin/:id - Admin get single user **/
+router.get('/admin/:id', validate(paramValidation.getSingleUserByAdmin), userController.getSingleUserByAdmin);
 
 /** POST /api/v1/user/admin/:id - Admin edit user status **/
 router.post('/admin/:id', validate(paramValidation.editUserByAdmin), userController.editUserByAdmin);

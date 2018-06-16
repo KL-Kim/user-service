@@ -16,7 +16,7 @@ const grants = {
 	},
 	"regular": {
 		account: {
-			"read:own": ["*", "!password", "!role", "!createdAt", "!userStatus", "!lastLogin"],
+			"read:own": ["*", "!password", "!role", "!userStatus", "!point"],
 			"read:any": ["username", "firstName", "lastName", "gender", "birthday", "profilePhotoUri", "favors", "interestedIn"],
 			"update:own": ["username", "firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
 		},
@@ -38,6 +38,7 @@ const grants = {
 	"manager": {
 		account: {
 			"read:own": ["*", "!password", "!createdAt", "!userStatus"],
+			"read:any": ["*", "!password"],
 			//"update:own": ["*", "!role", "!point", "!userStatus", "!isVerified", "!createdAt", "!lastLogin"],
 			"update:own": ["firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
 		},

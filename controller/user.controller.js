@@ -36,18 +36,30 @@ class UserController extends BaseController {
 		this._jwtManager = new JwtManager();
 		this._mailManager = new MailManager();
 		this._ac = new AccessControl(grants);
-		this._grpcClient = new businessProto.BusinessService(
+
+		// this._grpcClient = new businessProto.BusinessService(
+    //   config.businessGrpcServer.host + ':' + config.businessGrpcServer.port,
+    //   grpc.credentials.createSsl(
+    //     config.rootCert,
+    //     config.grpcPrivateKey,
+    //     config.grpcPublicKey,
+    //   ),
+    //   {
+    //     'grpc.ssl_target_name_override' : 'ikoreatown.net',
+    //     'grpc.default_authority': 'ikoreatown.net'
+    //   }
+    // );
+
+		this._businessGrpcClient = new businessProto.BusinessService(
       config.businessGrpcServer.host + ':' + config.businessGrpcServer.port,
-      grpc.credentials.createSsl(
-        config.rootCert,
-        config.grpcPrivateKey,
-        config.grpcPublicKey,
-      ),
-      {
-        'grpc.ssl_target_name_override' : 'ikoreatown.net',
-        'grpc.default_authority': 'ikoreatown.net'
-      }
+      grpc.credentials.createInsecure()
     );
+
+		this._businessGrpcClient.waitForReady(Infinity, (err) => {
+      if (err) console.error(err);
+
+      console.log("Connected Business gRPC Server!");
+    });
 	}
 
 	/**
@@ -58,52 +70,25 @@ class UserController extends BaseController {
 	 * @property {String} req.query.by - Who get user info,
 	 * @returns {User}
 	 */
-	getSingleUser(req, res, next) {
+	getMyself(req, res, next) {
 		UserController.authenticate(req, res, next)
 			.then(user => {
+				if (req.params.id !== user._id.toString()) throw new APIError("Forbidden", httpStatus.FORBIDDEN);
 
-				req.user = user;
+				req.permission = this._ac.can(user.role).readOwn('account');
 
-				return User.getById(req.params.id);
-			})
-			.then(user => {
-				let permission, isOwn;
+				const lastLogin = {
+					agent: req.useragent.browser,
+					ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+				 	time: Date.now(),
+				};
 
-				if (req.user._id.toString() === user._id.toString()) {
-					isOwn = true;
-					permission = this._ac.can(user.role).readOwn('account');
-				} else {
-					if (req.user.role === 'manager' || req.user.role === 'admin' || req.user.role === 'god') {
-						isOwn = false;
-						permission = this._ac.can(user.role).readAny('account');
-
-						return user;
-					} else {
-						throw new APIError("Forbidden", httpStatus.FORBIDDEN);
-					}
-				}
-
-				if (isOwn) {
-					const lastLogin = {
-						agent: req.useragent.browser,
-						ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
-					 	time: Date.now(),
-					};
-
-					user.lastLogin.push(lastLogin);
-				}
+				user.lastLogin.push(lastLogin);
 
 				return user.save();
 			})
 			.then(user => {
-				let filteredUser;
-				if (req.user.role === 'admin' || req.user.role === 'god') {
-					filteredUser = user;
-				} else {
-					filteredUser = UserController.filterUserData(user)
-				}
-
-				return res.json(filteredUser);
+				return res.json(UserController.filterUserData(user, 'OWN'));
 			})
 			.catch((err) => {
 				return next(err);
@@ -200,18 +185,16 @@ class UserController extends BaseController {
 					httpOnly: true
 				});
 				return that._jwtManager.signToken('ACCESS', req.user.id, req.user.role, req.user.isVerified);
-			}).then((accessToken) => {
+			})
+			.then((accessToken) => {
 				req.accessToken = accessToken;
 				return that._mailManager.sendEmailVerification(req.user, accessToken);
-			}).then(response => {
-				if (response) {
-					return res.status(201).json({
-						"user": UserController.filterUserData(req.user),
-						"token": req.accessToken,
-					});
-				} else {
-					throw new APIError("Sending Email Failed", httpStatus.INTERNAL_SERVER_ERROR);
-				}
+			})
+			.then(response => {
+				return res.status(201).json({
+					"user": UserController.filterUserData(req.user, 'OWN'),
+					"token": req.accessToken,
+				});
 			})
 			.catch((error) => {
 				return next(error);
@@ -237,7 +220,7 @@ class UserController extends BaseController {
 				}
 			})
       .then(user => {
-	 			return res.json(UserController.filterUserData(user));
+	 			return res.json(UserController.filterUserData(user, 'OWN'));
 	 		}).catch(err => {
 	 			return next(err);
 	 		});
@@ -258,28 +241,18 @@ class UserController extends BaseController {
 	updateUserProfile(req, res, next) {
 		UserController.authenticate(req, res, next)
 			.then((user) => {
-				if (req.params.id !== user._id.toString()) {
-					let error = new APIError("Forbidden", httpStatus.FORBIDDEN);
-					return next(error);
-				}
+				if (req.params.id !== user._id.toString()) throw new APIError("Forbidden", httpStatus.FORBIDDEN);
 
 				let	permission = this._ac.can(user.role).updateOwn('account');
 				let newUserInfo = permission.filter(req.body);
 
 				return user.update({...newUserInfo}, { runValidators: true }).exec();
 			})
-			.then((result) => {
-				if (result.ok) {
-					return result;
-				} else {
-					throw new APIError("Update user failed", httpStatus.INTERNAL_SERVER_ERROR);
-				}
-			})
 			.then(result => {
 				return User.getById(req.params.id);
 			})
 			.then(user => {
-				return res.json(UserController.filterUserData(user));
+				return res.json(UserController.filterUserData(user, 'OWN'));
 			}).catch((err) => {
 				return next(err);
 			});
@@ -307,7 +280,7 @@ class UserController extends BaseController {
         return user.save();
       })
       .then(user => {
-				return res.json(UserController.filterUserData(user));
+				return res.json(UserController.filterUserData(user, 'OWN'));
 			}).catch((err) => {
 				return next(err);
 			});
@@ -324,10 +297,7 @@ class UserController extends BaseController {
 	operateFavor(req, res, next) {
 		UserController.authenticate(req, res, next)
 			.then((user) => {
-				if (req.params.id !== user._id.toString()) {
-					let error = new APIError("Forbidden", httpStatus.FORBIDDEN);
-					return next(error);
-				}
+				if (req.params.id !== user._id.toString()) throw new APIError("Forbidden", httpStatus.FORBIDDEN);
 
 				const bid = req.body.bid;
 				const index = user.favors.indexOf(bid);
@@ -336,7 +306,7 @@ class UserController extends BaseController {
 					user.favors.splice(index, 1);
 
 					return new Promise((resolve, reject) => {
-						this._grpcClient.removeFromFavoredUser({
+						this._businessGrpcClient.removeFromFavoredUser({
 							bid: bid,
 							uid: user._id.toString(),
 						}, (err, response) => {
@@ -350,7 +320,7 @@ class UserController extends BaseController {
 					user.favors.push(bid);
 
 					return new Promise((resolve, reject) => {
-						this._grpcClient.addToFavoredUser({
+						this._businessGrpcClient.addToFavoredUser({
 							bid: bid,
 							uid: user._id.toString(),
 						}, (err, response) => {
@@ -361,13 +331,13 @@ class UserController extends BaseController {
 					});
 				}
 
-				return user.save();
+				return user;
 			})
 			.then(user => {
 				return user.save();
 			})
 			.then(user => {
-				return res.json(UserController.filterUserData(user));
+				return res.json(UserController.filterUserData(user, 'OWN'));
 			})
 			.catch(err => {
 				return next(err);
@@ -395,7 +365,7 @@ class UserController extends BaseController {
 				return user.save();
 			})
 			.then(user => {
-				return res.json(UserController.filterUserData(user));
+				return res.json(UserController.filterUserData(user, 'OWN'));
 			})
 			.catch((err) => {
 				return next(err);
@@ -414,9 +384,7 @@ class UserController extends BaseController {
 	updateUserPhone(req, res, next) {
 		UserController.authenticate(req, res, next)
 			.then((user) => {
-				if (req.params.id !== user._id.toString()) {
-					return next(new APIError("Forbidden", httpStatus.FORBIDDEN));
-				}
+				if (req.params.id !== user._id.toString()) throw new APIError("Forbidden", httpStatus.FORBIDDEN);
 
 				const phoneNumber = req.body.phoneNumber;
 				const code = req.body.code;
@@ -432,15 +400,14 @@ class UserController extends BaseController {
 						if (codeObj.code === code) {
 							user.phoneNumber = phoneNumber;
 							return user.save();
-							// return user.update({ "phoneNumber": phoneNumber }).exec();
 						} else {
-							return next(new APIError("Codes do not match", httpStatus.FORBIDDEN));
+							throw new APIError("Codes do not match", httpStatus.FORBIDDEN);
 						}
 					}
 				})
 			})
 			.then(user => {
-				return res.json(UserController.filterUserData(user));
+				return res.json(UserController.filterUserData(user, 'OWN'));
 			}).catch((err) => {
 				return next(err);
 			});
@@ -448,6 +415,7 @@ class UserController extends BaseController {
 
 	/**
 	 * Change password
+	 * @role - *
    * @since 0.0.1
 	 * @property {string} req.body.password - User's new password
 	 * @property {string} req.body.passwordConfirmation - Password confirmation
@@ -455,18 +423,16 @@ class UserController extends BaseController {
 	 */
 	changePassword(req, res, next) {
 		if (req.body.password !== req.body.passwordConfirmation)
-			return done(new APIError("Passwords do not match", httpStatus.BAD_REQUEST));
+			throw new APIError("Passwords do not match", httpStatus.BAD_REQUEST);
 
 		const that = this;
 
 		UserController.authenticate(req, res, next)
 			.then((user) => {
 				return user.update({ "password": req.body.password}, { runValidators: true }).exec();
-			}).then((result) => {
-				if (result.ok)
-					return res.status(204).send();
-				else
-					return next(new APIError("Update user failed", httpStatus.INTERNAL_SERVER_ERROR));
+			})
+			.then((result) => {
+				return res.status(204).send();
 			})
 			.catch((err) => {
 				return next(err);
@@ -475,7 +441,7 @@ class UserController extends BaseController {
 
 	/**
 	 * Get users list by admin
-	 * @role admin
+	 * @role - admin
    * @since 0.0.1
 	 * @property {string} req.query.search - Search user
 	 * @property {number} req.query.skip - Number of users to be skipped.
@@ -519,8 +485,32 @@ class UserController extends BaseController {
 	}
 
 	/**
+	 * Get single user data by admin
+	 * @role - admin
+   * @since 0.0.1
+	 * @property {string} req.params.id - Users's id
+	 * @returns {User}
+	 */
+	getSingleUserByAdmin(req, res, next) {
+		UserController.authenticate(req, res, next)
+			.then(user => {
+				if (user.role !== 'manager' && user.role !== 'admin' && user.role !== 'god') throw new APIError("Forbidden", httpStatus.FORBIDDEN);
+
+        return User.getById(req.params.id);
+			})
+			.then(user => {
+				if (_.isEmpty(user)) throw new APIError("Not found", httpStatus.NOT_FOUND);
+
+				return res.json(user);
+			})
+			.catch(err => {
+				return next(err);
+			});
+	}
+
+	/**
 	 * Edit user's role & status by admin
-	 * @role admin
+	 * @role - admin
    * @since 0.0.1
 	 * @property {string} req.params.id - Users's id
 	 * @property {string} req.body.role - User's role
@@ -535,7 +525,7 @@ class UserController extends BaseController {
         return User.getById(req.params.id);
 			})
 			.then(user => {
-				if (_.isEmpty(user)) throw new APIError("User do not exists", httpStatus.NOT_FOUND);
+				if (_.isEmpty(user)) throw new APIError("Not found", httpStatus.NOT_FOUND);
 
         const { role, userStatus } = req.body;
 
@@ -552,7 +542,7 @@ class UserController extends BaseController {
 	/**
 	 * Authenticate User
    * @since 0.0.1
-	 * @return {Promise<Object, APIError>}
+	 * @returns {Promise<Object, APIError>}
 	 */
 	static authenticate(req, res, next) {
 		return new Promise((resolve, reject) => {
@@ -573,17 +563,21 @@ class UserController extends BaseController {
 	 * Filter user data
    * @since 0.0.1
    * @param {Object} user - User object
-   * @return {User} - filtered user data
+	 * @param {String} type - Filter type
+   * @returns {User} - filtered user data
 	 */
-	static filterUserData(user) {
+	static filterUserData(user, type) {
 		let permission;
 
 		const ac = new AccessControl(grants);
 
-		if (user.role === 'admin' || user.role === 'god') {
-			permission = ac.can(user.role).readAny('account');
-		} else {
-			permission = ac.can(user.role).readOwn('account');
+		switch (type) {
+			case "ANY":
+				permission = ac.can(user.role).readAny('account');
+				break;
+
+			default:
+				permission = ac.can(user.role).readOwn('account');
 		}
 
 		const filteredUserData = permission.filter(user.toJSON());

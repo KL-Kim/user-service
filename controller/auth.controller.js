@@ -42,17 +42,18 @@ class AuthController extends BaseController {
 	 */
 	issueAccessToken(req, res, next) {
 		const that = this;
-		passport.authenticate('refresh-token', { session: false }, (err, payload, info) => {
+		passport.authenticate('refresh-token', { session: false }, (err, {payload, user} = {}, info) => {
 			if (err) return next(err);
 			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
-			that._jwtManager.signToken('ACCESS', payload.user.id, payload.user.role, payload.user.isVerified).then((token) => {
-				return res.json({
-					"token": token,
+			that._jwtManager.signToken('ACCESS', user.id, user.role, user.isVerified)
+				.then((token) => {
+					return res.json({
+						"token": token,
+					});
+				}).catch((err) => {
+					return next(err);
 				});
-			}).catch((err) => {
-				return next(err);
-			});
 		})(req, res, next);
 	}
 
@@ -128,15 +129,13 @@ class AuthController extends BaseController {
 			if (err) return next(err);
 			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
-			if (payload) {
-				that._jwtManager.revokeRefreshToken(payload.payload.tid)
-				.then((revokeToken) => {
-					if (revokeToken)
-						return res.status(204).send();
-				}).catch((err) => {
-					return next(err);
-				});
-			}
+			that._jwtManager.revokeRefreshToken(payload.payload.tid)
+			.then((revokeToken) => {
+				if (revokeToken)
+					return res.status(204).send();
+			}).catch((err) => {
+				return next(err);
+			});
 		})(req, res, next);
 	}
 
@@ -150,30 +149,23 @@ class AuthController extends BaseController {
 	sendChangePasswordEmail(req, res, next) {
 		const email = req.params.email;
 
-		if (email) {
-			User.findOne({ "email": email }, (err, user) => {
-				if (err) return next(err);
+		if (_.isEmpty(email)) throw new APIError("Email missing", httpStatus.BAD_REQUEST);
 
-				if (_.isEmpty(user)) {
-					return next(new APIError("Not found", httpStatus.BAD_REQUEST));
-				}
+		User.getByEmail(req.params.email)
+			.then(user => {
+				if (_.isEmpty(user)) throw new APIError("Not found", httpStatus.BAD_REQUEST);
 
-				this._jwtManager.signToken('ACCESS', user.id, user.role, user.isVerified).then(accessToken => {
-					return this._mailManager.sendChangePassword(user, accessToken);
-				}).then(response => {
-					if (response) {
-						return res.status(204).send();
-					}
-				})
-				.catch(err => {
-					return next(err);
-				});
-
+				return this._jwtManager.signToken('ACCESS', user.id, user.role, user.isVerified);
+			})
+			.then(accessToken => {
+				return this._mailManager.sendChangePassword(user, accessToken);
+			})
+			.then(response => {
+				return res.status(204).send();
+			})
+			.catch(err => {
+				return next(err);
 			});
-		} else {
-			const error = new APIError("Email missing", httpStatus.BAD_REQUEST);
-			return next(error);
-		}
 	}
 
 	/**
@@ -186,29 +178,23 @@ class AuthController extends BaseController {
 	sendAccountVerificationEmail(req, res, next) {
 		const email = req.params.email;
 
-		if (email) {
-			User.findOne({ "email": email }, (err, user) => {
-				if (err) return next(err);
+		if (_.isEmpty(email)) throw new APIError("Email missing", httpStatus.BAD_REQUEST);
 
-				if (_.isEmpty(user)) {
-					return next(new APIError("Not found", httpStatus.BAD_REQUEST));
-				}
+		User.getByEmail(req.params.email)
+			.then(user => {
+				if (_.isEmpty(user)) throw new APIError("Not found", httpStatus.BAD_REQUEST);
 
-				this._jwtManager.signToken('ACCESS', user.id, user.role, user.isVerified).then(accessToken => {
-					return this._mailManager.sendEmailVerification(user, accessToken);
-				}).then(response => {
-					if (response) {
-						return res.status(204).send();
-					}
-				})
-				.catch(err => {
-					return next(err);
-				});
+				return this._jwtManager.signToken('ACCESS', user.id, user.role, user.isVerified);
+			})
+			.then(accessToken => {
+				return this._mailManager.sendEmailVerification(user, accessToken);
+			})
+			.then(response => {
+				return res.status(204).send();
+			})
+			.catch(err => {
+				return next(err);
 			});
-		} else {
-			const error = new APIError("Email missing", httpStatus.BAD_REQUEST);
-			return next(error);
-		}
 	}
 
 	/**
@@ -224,57 +210,58 @@ class AuthController extends BaseController {
 			return next(new APIError("Bad phone number format", httpStatus.BAD_REQUEST));
 		}
 
-		VerificationCode.getByPhoneNumber(req.params.phoneNumber).then(codeObj => {
-			if (_.isEmpty(codeObj)) {
-				let newCode = 0;
+		VerificationCode.getByPhoneNumber(req.params.phoneNumber)
+			.then(codeObj => {
+				if (codeObj) {
+					codeObj.createdAt = Date.now();
+					return codeObj.save();
+				} else {
+					let newCode = 0;
 
-				while (newCode < 100000) {
-					newCode = Math.floor(Math.random() * 1000000);
+					while (newCode < 100000) {
+						newCode = Math.floor(Math.random() * 1000000);
+					}
+
+					let newCodeObj = new VerificationCode({
+						"code": newCodeObj,
+						"phoneNumber": req.params.phoneNumber,
+					});
+
+					return newCode.save();
 				}
+			})
+			.then(codeObj => {
+				const accessKeyId = config.SMSAccessKey.accessKeyId;
+				const secretAccessKey = config.SMSAccessKey.accessKeySecret;
 
-				let newCodeObj = new VerificationCode({
-					"code": newCode,
-					"phoneNumber": req.params.phoneNumber,
+				const smsClient = new SMSClient({
+					"accessKeyId": accessKeyId,
+					"secretAccessKey": secretAccessKey
 				});
 
-				return newCodeObj.save();
-			} else {
-				codeObj.createdAt = Date.now();
-				return codeObj.save();
-			}
-		}).then(codeObj => {
-			req.codeObj = codeObj;
-			const accessKeyId = config.SMSAccessKey.accessKeyId;
-			const secretAccessKey = config.SMSAccessKey.accessKeySecret;
+				// Simulate Success Response
+				return {
+					Code: "OK",
+				};
 
-			const smsClient = new SMSClient({
-				"accessKeyId": accessKeyId,
-				"secretAccessKey": secretAccessKey
+				// return smsClient.sendSMS({
+				// 	PhoneNumbers: codeObj.phoneNumber,
+				// 	SignName: '阿里云短信测试专用',
+				// 	TemplateCode: 'SMS_127850153',
+				// 	TemplateParam: `{"code": ${codeObj.code}}`
+				// });
+			})
+			.then(response => {
+				if (response.Code === 'OK') {
+					return res.status(204).send();
+				} else {
+					const error = new APIError("Send SMS failed");
+					return next(error);
+				}
+			}).catch(err => {
+				return next(err);
 			});
-
-			// Simulate Success Response
-			return {
-				Code: "OK",
-			};
-
-			// return smsClient.sendSMS({
-			// 	PhoneNumbers: codeObj.phoneNumber,
-			// 	SignName: '阿里云短信测试专用',
-			// 	TemplateCode: 'SMS_127850153',
-			// 	TemplateParam: `{"code": ${codeObj.code}}`
-			// });
-		}).then(response => {
-			if (response.Code === 'OK') {
-				return res.status(204).send();
-			} else {
-				const error = new APIError("Send SMS failed");
-				return next(error);
-			}
-		}).catch(err => {
-			return next(err);
-		});
 	}
-
 }
 
 export default AuthController;
