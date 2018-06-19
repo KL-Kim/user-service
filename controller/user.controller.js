@@ -75,8 +75,6 @@ class UserController extends BaseController {
 			.then(user => {
 				if (req.params.id !== user._id.toString()) throw new APIError("Forbidden", httpStatus.FORBIDDEN);
 
-				req.permission = this._ac.can(user.role).readOwn('account');
-
 				const lastLogin = {
 					agent: req.useragent.browser,
 					ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,

@@ -42,7 +42,7 @@ class AuthController extends BaseController {
 	 */
 	issueAccessToken(req, res, next) {
 		const that = this;
-		passport.authenticate('refresh-token', { session: false }, (err, {payload, user} = {}, info) => {
+		passport.authenticate('refresh-token', { session: false }, (err, { payload, user } = {}, info) => {
 			if (err) return next(err);
 			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
@@ -125,17 +125,17 @@ class AuthController extends BaseController {
 	 */
 	logout(req, res, next) {
 		const that = this;
-		passport.authenticate('refresh-token', { session: false }, (err, payload, info) => {
+		passport.authenticate('refresh-token', { session: false }, (err, { payload, user } = {}, info) => {
 			if (err) return next(err);
 			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
 			that._jwtManager.revokeRefreshToken(payload.payload.tid)
-			.then((revokeToken) => {
-				if (revokeToken)
-					return res.status(204).send();
-			}).catch((err) => {
-				return next(err);
-			});
+				.then(revokeToken => {
+					revokeToken
+						return res.status(204).send();
+				}).catch((err) => {
+					return next(err);
+				});
 		})(req, res, next);
 	}
 

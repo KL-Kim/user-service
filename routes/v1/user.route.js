@@ -71,7 +71,7 @@ router.get('/admin', validate(paramValidation.getUsersListByAdmin), userControll
 /** GET /api/v1/user/admin/:id - Admin get single user **/
 router.get('/admin/:id', validate(paramValidation.getSingleUserByAdmin), userController.getSingleUserByAdmin);
 
-/** POST /api/v1/user/admin/:id - Admin edit user status **/
+/** POST /api/v1/user/admin/:id - Admin edit user **/
 router.post('/admin/:id', validate(paramValidation.editUserByAdmin), userController.editUserByAdmin);
 
 export default router;
