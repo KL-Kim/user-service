@@ -129,7 +129,7 @@ class AuthController extends BaseController {
 			if (err) return next(err);
 			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
-			that._jwtManager.revokeRefreshToken(payload.payload.tid)
+			that._jwtManager.revokeRefreshToken(payload.tid)
 				.then(revokeToken => {
 					revokeToken
 						return res.status(204).send();
