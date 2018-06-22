@@ -223,11 +223,11 @@ class AuthController extends BaseController {
 					}
 
 					let newCodeObj = new VerificationCode({
-						"code": newCodeObj,
+						"code": newCode,
 						"phoneNumber": req.params.phoneNumber,
 					});
 
-					return newCode.save();
+					return newCodeObj.save();
 				}
 			})
 			.then(codeObj => {
