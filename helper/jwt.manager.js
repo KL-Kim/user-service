@@ -89,19 +89,23 @@ class jwtManager extends BaseAutoBindedClass {
 	 */
 	revokeRefreshToken(tid) {
 		return new Promise((resolve, reject) => {
-			RevokedToken.findOne({ id: tid }, (err, result) => {
+			RevokedToken.findOne({ id: tid }, (err, token) => {
 				if (err) return reject(err);
 
-				if (result) {
-					reject(new APIError("Token already revoked", httpStatus.BAD_REQUEST));
-				} else {
-					let revokedToken = new RevokedToken({
-						id: tid
+				if (token) {
+					return reject(new APIError("Token already revoked", httpStatus.BAD_REQUEST));
+				} 
+
+
+				let revokedToken = new RevokedToken({
+					id: tid
+				});
+
+				revokedToken.save()
+					.then((revokedToken) => {
+						return resolve(revokedToken);
 					});
-					revokedToken.save().then((revokedToken) => {
-						resolve(revokedToken);
-					});
-				}
+				
 			});
 		});
 	}

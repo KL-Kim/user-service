@@ -131,8 +131,7 @@ class AuthController extends BaseController {
 
 			that._jwtManager.revokeRefreshToken(payload.tid)
 				.then(revokeToken => {
-					revokeToken
-						return res.status(204).send();
+					return res.status(204).send();
 				}).catch((err) => {
 					return next(err);
 				});
