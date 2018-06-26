@@ -215,11 +215,13 @@ UserSchema.methods = {
 	*/
 	isValidPassword(password) {
 		return new Promise((resolve, reject) => {
-			bcrypt.compare(password, this.password).then((res) => {
-				return resolve(res);
-			}).catch((err) => {
-				return reject(err);
-			});
+			bcrypt.compare(password, this.password)
+				.then((res) => {
+					return resolve(res);
+				})
+				.catch((err) => {
+					return reject(err);
+				});
 		});
 	},
 

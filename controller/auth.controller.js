@@ -47,11 +47,11 @@ class AuthController extends BaseController {
 			if (info) return next(new APIError(info.message, httpStatus.UNAUTHORIZED));
 
 			that._jwtManager.signToken('ACCESS', user.id, user.role, user.isVerified)
-				.then((token) => {
+				.then(token => {
 					return res.json({
 						"token": token,
 					});
-				}).catch((err) => {
+				}).catch(err => {
 					return next(err);
 				});
 		})(req, res, next);
@@ -79,41 +79,44 @@ class AuthController extends BaseController {
 
 			user.lastLogin.push(lastLogin);
 
-			user.save((err, savedUser) => {
-				if (err) return next(err);
-				req.user = savedUser;
+			return user.save()
+				.then(user => {
+					if (_.isEmpty(user)) throw new APIError("Not found", httpStatus.NOT_FOUND);
 
-				that._jwtManager.signToken('REFRESH', savedUser.id, savedUser.role, savedUser.isVerified)
-					.then((refreshToken) => {
-						res.cookie(config.refreshTokenCookieKey, refreshToken, {
-							"maxAge": ms(config.refreshTokenOptions.expiresIn),
-							"httpOnly": true,
-						});
+					req.user = user;
 
-						return user;
-					}).then(user => {
-						return that._jwtManager.signToken('ACCESS', user.id, user.role, user.isVerified);
-					}).then((accessToken) => {
-						let permission;
-						const user = req.user;
-
-						if (user.role === 'admin' || user.role === 'god') {
-							permission = this._ac.can(user.role).readAny('account');
-						} else {
-							permission = this._ac.can(user.role).readOwn('account');
-						}
-
-						const filteredUser = permission.filter(user.toJSON());
-						filteredUser._id = user.id.toString();
-
-						return res.json({
-							"user": filteredUser,
-							"token": accessToken
-						});
-					}).catch((err) => {
-						return next(err);
+					return that._jwtManager.signToken('REFRESH', user.id, user.role, user.isVerified);
+				})
+				.then((refreshToken) => {
+					res.cookie(config.refreshTokenCookieKey, refreshToken, {
+						"maxAge": ms(config.refreshTokenOptions.expiresIn),
+						"httpOnly": true,
 					});
-			});
+
+					return user;
+				})
+				.then(user => {
+					return that._jwtManager.signToken('ACCESS', user.id, user.role, user.isVerified);
+				})
+				.then((accessToken) => {
+					let permission;
+
+					if (req.user.role === 'manager'|| req.user.role === 'admin' || req.user.role === 'god') {
+						permission = this._ac.can(req.user.role).readAny('account');
+					} else {
+						permission = this._ac.can(req.user.role).readOwn('account');
+					}
+
+					const filteredUser = permission.filter(req.user.toJSON());
+					filteredUser._id = req.user.id.toString();
+
+					return res.json({
+						"user": filteredUser,
+						"token": accessToken
+					});
+				}).catch((err) => {
+					return next(err);
+				});
 		})(req, res, next);
 	}
 
@@ -153,11 +156,12 @@ class AuthController extends BaseController {
 		User.getByEmail(req.params.email)
 			.then(user => {
 				if (_.isEmpty(user)) throw new APIError("Not found", httpStatus.BAD_REQUEST);
+				req.user = user;
 
 				return this._jwtManager.signToken('ACCESS', user.id, user.role, user.isVerified);
 			})
 			.then(accessToken => {
-				return this._mailManager.sendChangePassword(user, accessToken);
+				return this._mailManager.sendChangePassword(req.user, accessToken);
 			})
 			.then(response => {
 				return res.status(204).send();
@@ -181,12 +185,13 @@ class AuthController extends BaseController {
 
 		User.getByEmail(req.params.email)
 			.then(user => {
-				if (_.isEmpty(user)) throw new APIError("Not found", httpStatus.BAD_REQUEST);
+				if (_.isEmpty(user)) throw new APIError("Not found", httpStatus.NOT_FOUND);
 
+				req.user = user;
 				return this._jwtManager.signToken('ACCESS', user.id, user.role, user.isVerified);
 			})
 			.then(accessToken => {
-				return this._mailManager.sendEmailVerification(user, accessToken);
+				return this._mailManager.sendEmailVerification(req.user, accessToken);
 			})
 			.then(response => {
 				return res.status(204).send();

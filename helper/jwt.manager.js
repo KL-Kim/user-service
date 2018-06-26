@@ -8,10 +8,11 @@
  * @license MIT
  */
 
-import httpStatus from 'http-status';
 import Promise from 'bluebird';
+import _ from 'lodash';
 import jwt from 'jsonwebtoken';
 import uuid from 'uuid';
+import httpStatus from 'http-status';
 
 import config from '../config/config.js';
 import APIError from './api-error';
@@ -43,14 +44,16 @@ class jwtManager extends BaseAutoBindedClass {
 	signToken(type, uid, role = "regular", isVerified = "false") {
 		const that = this;
 		return new Promise((resolve, reject) => {
-			if (!uid || !type) return reject(new APIError("Bad params"), httpStatus.INTERNAL_SERVER_ERROR, true);
+			if (_.isEmpty(uid) || _.isEmpty(type)) 
+				return reject(new APIError("Bad params"), httpStatus.BAD_REQUEST, true);
 
-			let payload = {
+			const payload = {
 				"tid": uuid.v1(),
 				"uid": uid,
 				"role": role,
 				"isVerified": isVerified,
 			};
+
 			let privateKey, options;
 
 			switch (type) {
@@ -65,7 +68,7 @@ class jwtManager extends BaseAutoBindedClass {
 					break;
 
 				default:
-					return reject(new APIError("Type missing"), httpStatus.INTERNAL_SERVER_ERROR, true);
+					return reject(new APIError("Type missing"), httpStatus.BAD_REQUEST, true);
 			}
 
 			if (privateKey && options) {
@@ -75,7 +78,7 @@ class jwtManager extends BaseAutoBindedClass {
 					if (token) {
 						return resolve(token);
 					} else {
-						reject(new APIError("Sign new token faild", httpStatus.INTERNAL_SERVER_ERROR, true));
+						return reject(new APIError("Sign new token faild", httpStatus.INTERNAL_SERVER_ERROR, true));
 					}
 				});
 			}
@@ -93,9 +96,8 @@ class jwtManager extends BaseAutoBindedClass {
 				if (err) return reject(err);
 
 				if (token) {
-					return reject(new APIError("Token already revoked", httpStatus.BAD_REQUEST));
+					return reject(new APIError("Token already revoked", httpStatus.CONFLICT));
 				} 
-
 
 				let revokedToken = new RevokedToken({
 					id: tid
