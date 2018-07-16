@@ -85,7 +85,7 @@ passport.use('refresh-token', new JwtStrategy(refreshTokenOptions, (payload, don
 	User.getById(payload.uid)
 		.then((user) => {
 			if (_.isEmpty(user)) return done(new APIError("User do not exists", httpStatus.NOT_FOUND));
- 
+
 			return done(null, {
 				payload: payload,
 				user: user
@@ -113,7 +113,7 @@ passport.use('access-token', new JwtStrategy(accessTokenOptions, (payload, done)
 			if (user) {
 				return done(null, user, false);
 			} else {
-				return done(new APIError("User do not exists", httpStatus.NOT_FOUND));
+				return done(new APIError("Not found", httpStatus.NOT_FOUND));
 			}
 		}).catch(err => {
 			return done(err);

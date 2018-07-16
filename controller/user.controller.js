@@ -352,14 +352,13 @@ class UserController extends BaseController {
 	 */
 	uploadProfilePhoto(req, res, next) {
 		UserController.authenticate(req, res, next)
-			.then((user) => {
+			.then(user => {
 				if (req.params.id !== user._id.toString()) {
 					let error = new APIError("Forbidden", httpStatus.FORBIDDEN);
 					return next(error);
 				}
 
 				user.profilePhotoUri = req.file.path;
-				//return user.update({ profilePhotoUri: req.file.path }).exec();
 				return user.save();
 			})
 			.then(user => {
