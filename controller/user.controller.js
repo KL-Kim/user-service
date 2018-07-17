@@ -269,13 +269,15 @@ class UserController extends BaseController {
 			.then(user => {
 				if (req.params.id !== user._id.toString()) throw new APIError("Forbidden", httpStatus.FORBIDDEN);
 
+				req.user = user;
+
 			  return User.getByUsername(req.body.username);
 			})
-      .then(newUser => {
-        if (newUser) throw new APIError("The username already exists", httpStatus.CONFLICT);
+      .then(user => {
+        if (user) throw new APIError("The username already exists", httpStatus.CONFLICT);
 
-        user.username = req.body.username;
-        return user.save();
+        req.user.username = req.body.username;
+        return req.user.save();
       })
       .then(user => {
 				return res.json(UserController.filterUserData(user, 'OWN'));
