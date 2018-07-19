@@ -93,6 +93,14 @@ const UserSchema = new Schema({
 			trim: true,
 		},
 	},
+	"generalLocation": {
+		name: {
+			type: String
+		},
+		code: {
+			type: Number
+		} 
+	},
 	"isVerified": {
 		type: Boolean,
 		default: false
