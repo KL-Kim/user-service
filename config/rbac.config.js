@@ -11,7 +11,7 @@ const grants = {
 	"guest": {
 		account: {
 			"create:own": ["email", "password"],
-			"read:any": ["username", "firstName", "lastName", "gender", "birthday", "profilePhotoUri", "favors", "interestedIn"],
+			"read:any": ["_id", "username", "firstName", "lastName", "gender", "birthday", "profilePhotoUri", "favors", "interestedIn"],
 		},
 	},
 	"regular": {
