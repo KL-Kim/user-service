@@ -8,7 +8,7 @@
     "start": "clear && babel-node server.js",
     "debug": "clear && babel-node --inspect=0.0.0.0:9229 server.js ",
     "log": "babel-node server.js 2> errors-file.log",
-    "init-db": "babel-node tests/init.mongo.js"
+    "init": "babel-node tests/init.mongo.js"
   },
   "repository": {
     "type": "git",

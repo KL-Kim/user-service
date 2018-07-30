@@ -18,9 +18,19 @@ let admin = new User({
 
 admin.save();
 
+let writer = new User({
+	username: 'writer',
+	email: 'writer@abc.com',
+	password: 'asdfasdf',
+	role: 'writer',
+	isVerified: true,
+});
+
+writer.save();
+
 let manager = new User({
 	username: 'manager',
-	email: 'jinguanglong11@gmail.com',
+	email: 'manager@abc.com',
 	password: 'asdfasdf',
 	role: 'manager',
 	isVerified: true,
