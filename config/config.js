@@ -10,6 +10,7 @@ import Joi from 'joi';
 import ms from 'ms';
 import mailAccount from './secret/mail-account';
 import SMSAccessKey from './secret/SMSAccessKey';
+import OSSAccessKey from './secret/OSSAccessKey';
 require('dotenv').config();
 
 function setConfig() {
@@ -43,10 +44,14 @@ function setConfig() {
 		ACCESS_JWT_ISSUER: Joi.string().allow(''),
 		ACCESS_JWT_AUDIENCE: Joi.string().allow(''),
 		ACCESS_JWT_EXPIRATION: Joi.string().default(ms('1h')),
+
+		ALIYUN_OSS_REGION: Joi.string(),
+		ALIYUN_OSS_BUCKET: Joi.string(),
+
 		// SESSION_SECRET: Joi.string().required(),
 	}).unknown(true);
 
-	const {error, value: envVars} = Joi.validate(process.env, envVarsSchema);
+	const { error, value: envVars } = Joi.validate(process.env, envVarsSchema);
 
 	if (error) {
 		throw new Error(`Config Validation Error: ${error.message}`);
@@ -59,17 +64,19 @@ function setConfig() {
 			host: envVars.MONGO_HOST,
 			port: envVars.MONGO_PORTS
 		},
+
 		webService: {
 			host: envVars.WEB_SERVICE_HOST,
 			port: envVars.WEB_SERVICE_PORT,
 			accountVerifyUrl: envVars.WEB_SERVICE_HOST + ':' + envVars.WEB_SERVICE_PORT + '/verify/',
 			changePasswordUrl: envVars.WEB_SERVICE_HOST + ':' + envVars.WEB_SERVICE_PORT + '/change-password/',
 		},
+		
 		businessGrpcServer: {
 			host: envVars.BUSINESS_GRPC_HOST,
 			port: envVars.BUSINESS_GRPC_PORT,
 		},
-		// sessionSecret: envVars.SESSION_SECRET,
+		
 		refreshTokenCookieKey: envVars.REFRESH_JWT_COOKIE_KEY,
 		refreshTokenOptions: {
 			algorithm: envVars.REFRESH_JWT_ALGORITHM,
@@ -77,23 +84,35 @@ function setConfig() {
 			//issuer: envVars.REFRESH_JWT_ISSUER,
 			//audience: envVars.REFRESH_JWT_AUDIENCE,
 		},
+
 		accessTokenOptions: {
 			algorithm: envVars.ACCESS_JWT_ALGORITHM,
 			expiresIn: envVars.ACCESS_JWT_EXPIRATION,
 			//issuer: envVars.ACCESS_JWT_ISSUER,
 			//audience: envVars.ACCESS_JWT_AUDIENCE,
 		},
+		
 		mailAccount: mailAccount,
+
 		SMSAccessKey: SMSAccessKey,
+
+		OSSAccessKey: OSSAccessKey,
+		OSSRegion: envVars.ALIYUN_OSS_REGION,
+		OSSBucket: envVars.ALIYUN_OSS_BUCKET,
+		
+		// sessionSecret: envVars.SESSION_SECRET,
 	};
 
 	try {
 		config.serverPublicKey = fs.readFileSync(__dirname + '/secret/server.cert.pem', 'utf8');
 		config.serverPrivateKey = fs.readFileSync(__dirname + '/secret/server.key.pem', 'utf8');
+
 		config.refreshTokenPrivateKey = fs.readFileSync(__dirname + '/secret/refresh.jwt.key.pem', 'utf8');
 		config.refreshTokenPublicKey = fs.readFileSync(__dirname + '/secret/refresh.jwt.cert.pem', 'utf8');
+
 		config.accessTokenPrivateKey = fs.readFileSync(__dirname + '/secret/access.jwt.key.pem', 'utf8');
 		config.accessTokenPublicKey = fs.readFileSync(__dirname + '/secret/access.jwt.cert.pem', 'utf8');
+		
 		config.rootCert = fs.readFileSync(__dirname + '/../config/secret/out/MY_ROOT_CA.crt'),
 		config.grpcPrivateKey = fs.readFileSync(__dirname + '/../config/secret/out/new.127.0.0.1.key'),
 		config.grpcPublicKey = fs.readFileSync(__dirname + '/../config/secret/out/127.0.0.1.crt')

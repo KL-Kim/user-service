@@ -16,12 +16,10 @@ validate.options({
 });
 
 const storage = multer.diskStorage({
-  "destination": (req, file, cb) => {
-    cb(null, './avatars/');
-  },
+  "destination": 'tmp/',
   "filename": (req, file, cb) => {
-    cb(null, file.originalname + '.avatar.jpeg');
-  }
+    cb(null, file.originalname + '.jpeg');
+  },
 });
 
 const upload = multer({

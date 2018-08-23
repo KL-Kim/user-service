@@ -16,11 +16,11 @@ import validator from 'validator';
 import SMSClient from '@alicloud/sms-sdk';
 import { AccessControl } from 'accesscontrol';
 
+import config from '../config/config';
 import BaseController from './base.controller';
 import APIError from '../helper/api-error';
 import JwtManager from '../helper/jwt.manager';
 import MailManager from '../helper/mail.manager';
-import config from '../config/config';
 import User from '../models/user.model';
 import VerificationCode from '../models/code.model';
 import grants from '../config/rbac.config';
@@ -226,7 +226,7 @@ class AuthController extends BaseController {
 						newCode = Math.floor(Math.random() * 1000000);
 					}
 
-					let newCodeObj = new VerificationCode({
+					const newCodeObj = new VerificationCode({
 						"code": newCode,
 						"phoneNumber": req.params.phoneNumber,
 					});

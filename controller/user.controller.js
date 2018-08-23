@@ -14,9 +14,11 @@ import grpc from 'grpc';
 import httpStatus from 'http-status';
 import crypto from 'crypto';
 import ms from 'ms';
+import fs from 'fs';
 import _ from 'lodash';
 import validator from 'validator';
 import { AccessControl } from 'accesscontrol';
+import OSS from 'ali-oss';
 
 import BaseController from './base.controller';
 import APIError from '../helper/api-error';
@@ -65,7 +67,7 @@ class UserController extends BaseController {
 	/**
 	 * Get single user by id
 	 * @role - *
-   * @since 0.0.1
+   	 * @since 0.0.1
 	 * @property {OjectId} req.params.id - user's id in url path
 	 * @property {String} req.query.by - Who get user info,
 	 * @returns {User}
@@ -95,10 +97,10 @@ class UserController extends BaseController {
 
 	/**
 	 * Get user by username
-   * @role - *
-   * @since 0.0.1
+   	 * @role - *
+   	 * @since 0.0.1
 	 * @property {String} name - User's username
-   * @returns {User}
+   	 * @returns {User}
 	 */
 	getUserByUsername(req, res, next) {
 		User.getByUsername(req.params.name)
@@ -121,7 +123,7 @@ class UserController extends BaseController {
 	/**
 	 * Create new user
 	 * @role - *
-   * @since 0.0.1
+     * @since 0.0.1
 	 * @property {string} req.body.password - user password
 	 * @property {string} req.body.passwordConfirmation - user password confirmation
 	 * @returns {User, token}
@@ -203,7 +205,7 @@ class UserController extends BaseController {
 	/**
 	 * Verify account
 	 * @role - *
-   * @since 0.0.1
+     * @since 0.0.1
 	 * @returns {User}
 	 */
 	accountVerification(req, res, next) {
@@ -227,7 +229,7 @@ class UserController extends BaseController {
 	/**
 	 * Update user's profile
 	 * @role - *
-   * @since 0.0.1
+     * @since 0.0.1
 	 * @param {string} req.params.id - User's id
 	 * @property {string} req.body.firstName - User first name
 	 * @property {string} req.body.lastName - User last name
@@ -259,7 +261,7 @@ class UserController extends BaseController {
 	/**
 	 * Update user's username
 	 * @role - *
-   * @since 0.0.1
+     * @since 0.0.1
 	 * @param {string} req.params.id - User's id
 	 * @property {string} req.body.username - User's username
 	 * @returns {User}
@@ -289,10 +291,10 @@ class UserController extends BaseController {
 	/**
 	 * Add or remove user's favorite business
 	 * @role - *
-   * @since 0.0.1
+     * @since 0.0.1
 	 * @param {string} req.params.id - User's id
 	 * @property {string} req.body.bid - Business id
-   * @returns {User}
+     * @returns {User}
 	 */
 	operateFavor(req, res, next) {
 		UserController.authenticate(req, res, next)
@@ -347,7 +349,7 @@ class UserController extends BaseController {
 	/**
 	 * Upload user's profile photo
 	 * @role - *
-   * @since 0.0.1
+	 * @since 0.0.1
 	 * @param {string} req.params.id - User's id
 	 * @property {file} req.file - Image file
 	 * @returns {User}
@@ -360,11 +362,38 @@ class UserController extends BaseController {
 					return next(error);
 				}
 
-				user.profilePhotoUri = req.file.path;
-				return user.save();
+				req.user = user;
+
+				const client = new OSS({
+					accessKeyId: config.OSSAccessKey.accessKeyId,
+					accessKeySecret: config.OSSAccessKey.accessKeySecret,
+					region: config.OSSRegion,
+					bucket: config.OSSBucket,
+					secure: true,
+				});
+
+				const rs = fs.createReadStream(req.file.path);
+
+				rs.on('error', err => {
+					throw err;
+				});
+
+				const pathname = 'avatars/' + user._id.toString() + '/avatar.jpg';
+
+				return client.putStream(pathname, rs);
+			})
+			.then(response => {
+				req.user.avatarUrl = response.url;
+
+				return req.user.save();
 			})
 			.then(user => {
-				return res.json(UserController.filterUserData(user, 'OWN'));
+				req.user = user;
+
+				return fs.unlink(req.file.path);
+			})
+			.then(() => {
+				return res.json(UserController.filterUserData(req.user, 'OWN'));
 			})
 			.catch((err) => {
 				return next(err);
@@ -374,7 +403,7 @@ class UserController extends BaseController {
 	/**
 	 * Upload user's mobile phone number
 	 * @role - *
-   * @since 0.0.1
+     * @since 0.0.1
 	 * @param {string} req.params.id - User's id
 	 * @property {string} req.body.phoneNumber - User's phone number
 	 * @property {number} req.body.code - Phone verification code
@@ -392,18 +421,19 @@ class UserController extends BaseController {
 					return next(new APIError("Bad Request Format", httpStatus.BAD_REQUEST));
 				}
 
-				return VerificationCode.getByPhoneNumber(phoneNumber).then(codeObj => {
-					if (_.isEmpty(codeObj)) {
-						return next(new APIError("Code do not exists", httpStatus.UNAUTHORIZED));
-					} else {
-						if (codeObj.code === code) {
-							user.phoneNumber = phoneNumber;
-							return user.save();
+				return VerificationCode.getByPhoneNumber(phoneNumber)
+					.then(codeObj => {
+						if (_.isEmpty(codeObj)) {
+							return next(new APIError("Code do not exists", httpStatus.UNAUTHORIZED));
 						} else {
-							throw new APIError("Codes do not match", httpStatus.FORBIDDEN);
+							if (codeObj.code === code) {
+								user.phoneNumber = phoneNumber;
+								return user.save();
+							} else {
+								throw new APIError("Codes do not match", httpStatus.FORBIDDEN);
+							}
 						}
-					}
-				})
+					});
 			})
 			.then(user => {
 				return res.json(UserController.filterUserData(user, 'OWN'));
@@ -415,10 +445,10 @@ class UserController extends BaseController {
 	/**
 	 * Change password
 	 * @role - *
-   * @since 0.0.1
+     * @since 0.0.1
 	 * @property {string} req.body.password - User's new password
 	 * @property {string} req.body.passwordConfirmation - Password confirmation
-   * @returns {void}
+     * @returns {void}
 	 */
 	changePassword(req, res, next) {
 		if (req.body.password !== req.body.passwordConfirmation)
@@ -441,7 +471,7 @@ class UserController extends BaseController {
 	/**
 	 * Get users list by admin
 	 * @role - admin
-   * @since 0.0.1
+     * @since 0.0.1
 	 * @property {string} req.query.search - Search user
 	 * @property {number} req.query.skip - Number of users to be skipped.
 	 * @property {number} req.query.limit - Limit number of users to be returned.
@@ -486,7 +516,7 @@ class UserController extends BaseController {
 	/**
 	 * Get single user data by admin
 	 * @role - admin
-   * @since 0.0.1
+     * @since 0.0.1
 	 * @property {string} req.params.id - Users's id
 	 * @returns {User}
 	 */
@@ -510,11 +540,11 @@ class UserController extends BaseController {
 	/**
 	 * Edit user's role & status by admin
 	 * @role - admin
-   * @since 0.0.1
+     * @since 0.0.1
 	 * @property {string} req.params.id - Users's id
 	 * @property {string} req.body.role - User's role
 	 * @property {string} req.body.userStatus - Users' status
-   * @returns {void}
+     * @returns {void}
 	 */
 	editUserByAdmin(req, res, next) {
 		UserController.authenticate(req, res, next)
@@ -540,7 +570,7 @@ class UserController extends BaseController {
 
 	/**
 	 * Authenticate User
-   * @since 0.0.1
+     * @since 0.0.1
 	 * @returns {Promise<Object, APIError>}
 	 */
 	static authenticate(req, res, next) {
@@ -560,10 +590,10 @@ class UserController extends BaseController {
 
 	/**
 	 * Filter user data
-   * @since 0.0.1
-   * @param {Object} user - User object
+     * @since 0.0.1
+   	 * @param {Object} user - User object
 	 * @param {String} type - Filter type
-   * @returns {User} - filtered user data
+     * @returns {User} - filtered user data
 	 */
 	static filterUserData(user, type) {
 		let permission;

@@ -129,7 +129,7 @@ const UserSchema = new Schema({
 	"interestedIn":[{
 		type: String,
 	}],
-	"profilePhotoUri": {
+	"avatarUrl": {
 		type: String,
 		default: ''
 	},

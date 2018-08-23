@@ -11,27 +11,27 @@ const grants = {
 	"guest": {
 		account: {
 			"create:own": ["email", "password"],
-			"read:any": ["_id", "username", "firstName", "lastName", "gender", "birthday", "profilePhotoUri", "favors", "interestedIn"],
+			"read:any": ["_id", "username", "firstName", "lastName", "gender", "birthday", "avatarUrl", "favors", "interestedIn"],
 		},
 	},
 	"regular": {
 		account: {
 			"read:own": ["*", "!password", "!role", "!userStatus", "!point"],
-			"read:any": ["username", "firstName", "lastName", "gender", "birthday", "profilePhotoUri", "favors", "interestedIn"],
+			"read:any": ["username", "firstName", "lastName", "gender", "birthday", "avatarUrl", "favors", "interestedIn"],
 			"update:own": ["username", "firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
 		},
 	},
 	"businessOwner": {
 		account: {
 			"read:own": ["*", "!password", "!createdAt", "!userStatus", "!lastLogin"],
-			"read:any": ["username", "firstName", "lastName", "gender", "birthday", "profilePhotoUri", "favors", "interestedIn"],
+			"read:any": ["username", "firstName", "lastName", "gender", "birthday", "avatarUrl", "favors", "interestedIn"],
 			"update:own": ["username", "firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
 		},
 	},
 	"writer": {
 		account: {
 			"read:own": ["*", "!password", "!createdAt", "!userStatus", "!lastLogin"],
-			"read:any": ["username", "firstName", "lastName", "gender", "birthday", "profilePhotoUri", "favors", "interestedIn"],
+			"read:any": ["username", "firstName", "lastName", "gender", "birthday", "avatarUrl", "favors", "interestedIn"],
 			"update:own": ["username", "firstName", "lastName", "gender", "birthday", "address", "interestedIn"],
 		},
 	},

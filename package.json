@@ -29,6 +29,7 @@
   "dependencies": {
     "@alicloud/sms-sdk": "^1.0.8",
     "accesscontrol": "^2.2.1",
+    "ali-oss": "^6.0.1",
     "auto-bind": "^1.2.0",
     "bcrypt": "^1.0.3",
     "bluebird": "^3.5.1",
@@ -41,6 +42,7 @@
     "express": "^4.16.2",
     "express-useragent": "^1.0.12",
     "express-validation": "^1.0.2",
+    "fs-extra": "^7.0.0",
     "grpc": "^1.11.3",
     "helmet": "^3.11.0",
     "http-status": "^1.0.1",
